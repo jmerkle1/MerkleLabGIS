@@ -18,6 +18,5 @@ Imports:
   raster,
   dplyr,
   terra,
-  MerkleLabGIS,
   sf,
   sp
