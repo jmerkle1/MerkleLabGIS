@@ -1,6 +1,6 @@
 export(ExtractRAP)
 export(bucket)
-exprt(crop_rasters)
+export(crop_rasters)
 import(httr)
 import(jsonlite)
 import(raster)
