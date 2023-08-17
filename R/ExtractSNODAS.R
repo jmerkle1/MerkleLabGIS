@@ -68,7 +68,8 @@ ExtractSNODAS <- function(point_data,
   
   names(rs) <- str_split(dat$filename, "\\.", simplify = TRUE)[,1]
   
-  pts <- vect(as(points %>% st_transform(crs = 5072), "Spatial"))
+  pts <- st_transform(point_data, crs = 5072)
+  #pts <- vect(as(points %>% st_transform(crs = 5072), "Spatial"))
   
   # Extract data
   Snodas <- terra::extract(rs, pts, ID = FALSE)
