@@ -19,4 +19,5 @@ Imports:
   dplyr,
   terra,
   sf,
-  sp
+  sp,
+  tidyverse
