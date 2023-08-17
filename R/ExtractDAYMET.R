@@ -2,13 +2,13 @@
 #' 
 #' The Extract DAYMET function processes data from DAYMET
 #' to extract specific metrics for given geographic points and dates.Users provide point spatial data
-#', desired DAYMET metrics (e.g., Maxprcp, Maxswe), and a date range. It extracts metric values for the provided points. 
+#', desired DAYMET metrics ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin"), and a date range. It extracts metric values for the provided points. 
 #' 
-#' @param XYdata sf point object
-#' @param metric_name character vector of DAYMET metrics to use (e.g. Maxprcp, Maxtmax)
+#' @param point_data sf point object
+#' @param metric_name character vector of DAYMET metrics to use ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin")
 #' @param start_date
 #' @param end_date
-#' @return Returns a vector with length of XYdata with the point/date values of RAPmetrics
+#' @return Returns a vector with length of point_data with the point/date values of RAPmetrics
 #' 
 #' 
 #' @return
@@ -42,6 +42,11 @@ ExtractDAYMET <- function(point_data,
   # Obtain the list of all available metrics
   myDaymetMetrics <- httr::POST("https://devise.uwyo.edu/umbraco/api/daymetapi/GetDerivedAnnualMetricsList", content_type_json()) %>% content()
   myDaymetMetrics <- do.call(rbind.data.frame, myDaymetMetrics)
+  
+  if(any(metric_name %in% c("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin")==FALSE)){
+    stop("The DAYMET metric must only be Maxprcp,Maxswe,Maxtmax,Maxtmin,Meanprcp,Meanswe,
+    Meantmax,Meantmin,Medianprcp,Medianswe,Mediantmax,Mediantmin")
+  }
   
   # Select metric
   if(is.null(metric_name)) {
