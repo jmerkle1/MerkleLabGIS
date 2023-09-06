@@ -60,7 +60,7 @@ ExtractDailySNODAS <- function(XYdata = data,
 
 
   formatted_dates <- paste0(format(unique_dates, "%Y-%m-%d"))
-
+  XYdata$formatted_dates <- formatted_dates
   XYdata <- st_transform(XYdata, crs = 5072)
   
   vals <- list() 
@@ -73,7 +73,7 @@ ExtractDailySNODAS <- function(XYdata = data,
     
     # Loop over unique_dates
     for (i in 1:length(unique_dates)) {
-      date <- unique_dates[i]
+      date <- formatted_dates[i]
       url_for_date <- df$url[df$sampDate == date & df$metric == Metric]  # Filter by Metric
       r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
       
