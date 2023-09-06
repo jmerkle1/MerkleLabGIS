@@ -1,6 +1,6 @@
-#' SNODAS Extraction Function
+#' Annual SNODAS Extraction Function
 #' 
-#' The Extract SNODAS function processes data from SNODAS
+#' The Extract Annual SNODAS function processes data from SNODAS
 #' to extract specific metrics for given geographic points and dates.Users provide point spatial data
 #', desired SNODAS metrics (e.g., MaxSnowDepth, MaxSWE, MeanSnowDepth), and a date range. It extracts metric values for the provided points. 
 #' 
@@ -24,7 +24,7 @@
 #' 
 
 
-ExtractSNODAS <- function(point_data, 
+ExtractAnnualSNODAS <- function(point_data, 
                                 start_date = "2005-01-01", 
                                 end_date = "2010-01-01", 
                                 metric_name = NULL) {

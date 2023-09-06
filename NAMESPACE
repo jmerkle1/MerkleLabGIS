@@ -1,5 +1,6 @@
 export(ExtractDAYMET)
-export(ExtractSNODAS)
+export(ExtractAnnualSNODAS)
+export(ExtractDailySNODAS)
 export(ExtractRAP)
 export(bucket)
 export(CropRasters)

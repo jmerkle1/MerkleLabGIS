@@ -41,18 +41,42 @@ pts <- data.frame(
 pts_sf <- st_as_sf(pts, coords = c("long", "lat"), crs = 4326, agr = "constant")
 rap <- ExtractRAP(pts_sf, RAPmetric = "Cover_BareGround", datesname = "dates", )
 ```
-### Extract SNODAS
-The Extract SNODAS function processes data from SNODAS
-to extract specific metrics for given geographic points and dates. Provide point spatial data
+### Extract Annual SNODAS
+The Extract Annual SNODAS function processes data from SNODAS
+to extract specific annual metrics for given geographic points and dates. Provide point spatial data
 desired SNODAS metrics (e.g., MaxSnowDepth, MaxSWE, MeanSnowDepth), and a date range to run our SNODAS function. The function extracts metric values for the provided points.
 ```
 #Sample data
 points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.54731, 45.54731)) %>%
   sf::st_as_sf(coords = c("x", "y"), crs = 4326)
   
-MaxSnowDepth <- ExtractSNODAS(points, start_date = "2005-01-01", 
+MaxSnowDepth <- ExtractAnnualSNODAS(points, start_date = "2005-01-01", 
                         end_date = "2010-01-01", metric_name = "MaxSnowDepth")
 ```
+
+### Extract Daily SNODAS
+The Extract Daily SNODAS function processes data from SNODAS and extracts specific daily metrics for given geographic points and dates. Provide point spatial data, a Posixct colunn, 
+desired SNODAS metrics (SWE or SnowDepth), and a date range to run our daily SNODAS function. The function extracts metric values for the provided points.
+
+```
+#Sample data
+
+lon <- c(-105.5, -106.2, -104.8,-109.281716,-109.281716,-105.5)
+lat <- c(41.0, 40.5, 40.9, 42.687292,42.687292,41.0)
+dates <- as.POSIXct(c("2009-01-01", "2009-02-01", "2009-03-01","2022-11-01", "2009-11-01","2009-02-01"))
+sample_data <- data.frame(lon, lat, dates)
+sample_data <- st_as_sf(sample_data, coords = c("lon", "lat"), crs = 4326)
+
+
+result <- ExtractDailySNODAS(XYdata = sample_data,
+                             start_date = "2005-01-01",
+                             end_date = "2023-01-01",
+                             datesname = "dates",
+                             Metrics = c("SWE", "SnowDepth"))  
+
+```
+
+
 ### Extract DAYMET
 The Extract DAYMET function processes data from DAYMET to extract specific metrics for given geographic points and dates. Provide point spatial data, desired DAYMET metrics ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin"), and a date range to run the DAYMET function.
 ```
