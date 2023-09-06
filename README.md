@@ -55,20 +55,21 @@ MaxSnowDepth <- ExtractAnnualSNODAS(points, start_date = "2005-01-01",
 ```
 
 ### Extract Daily SNODAS
-The Extract Daily SNODAS function processes data from SNODAS and extracts specific daily metrics for given geographic points and dates. Provide point spatial data, a Posixct colunn, 
+The Extract Daily SNODAS function processes data from SNODAS and extracts specific daily metrics for given geographic points and dates. Provide point spatial data, a column representing date as POSIXct, 
 desired SNODAS metrics (SWE or SnowDepth), and a date range to run our daily SNODAS function. The function extracts metric values for the provided points.
 
 ```
 #Sample data
 
-lon <- c(-105.5, -106.2, -104.8,-109.281716,-109.281716,-105.5)
-lat <- c(41.0, 40.5, 40.9, 42.687292,42.687292,41.0)
-dates <- as.POSIXct(c("2009-01-01", "2009-02-01", "2009-03-01","2022-11-01", "2009-11-01","2009-02-01"))
-sample_data <- data.frame(lon, lat, dates)
-sample_data <- st_as_sf(sample_data, coords = c("lon", "lat"), crs = 4326)
+pts <- data.frame(
+  long = runif(5, -111, -104),
+  lat = runif(5, 41, 45),
+  dates = as.POSIXct(sample(seq(as.Date('2010-01-01'), as.Date('2022-12-31'), by="day"), 5, replace = TRUE))
+)
+pts_sf <- st_as_sf(pts, coords = c("long", "lat"), crs = 4326, agr = "constant")
 
 
-result <- ExtractDailySNODAS(XYdata = sample_data,
+result <- ExtractDailySNODAS(XYdata = pts_sf,
                              start_date = "2005-01-01",
                              end_date = "2023-01-01",
                              datesname = "dates",
