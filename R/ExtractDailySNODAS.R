@@ -18,6 +18,7 @@
 #' @import jsonlite
 #' @import tidyverse
 #' @import httr
+#' @import dplyr
 #' @export
 #' 
 #' 
@@ -61,9 +62,9 @@ ExtractDailySNODAS <- function(XYdata = data,
 
   formatted_dates <- paste0(format(unique_dates, "%Y-%m-%d"))
   XYdata$formatted_dates <- formatted_dates
+  
   XYdata <- st_transform(XYdata, crs = 5072)
   
-  vals <- list() 
   for (Metric in Metrics) { 
     productName <- Metric  
     
@@ -71,24 +72,38 @@ ExtractDailySNODAS <- function(XYdata = data,
     col_name <- paste0("Snodas_", productName)
     XYdata[[col_name]] <- NA
     
-    # Loop over unique_dates
+    # Create a list to store extracted values
+    extracted_vals_list <- list()  
+    
+    # Loop over unique_dates and extract values
     for (i in 1:length(unique_dates)) {
       date <- formatted_dates[i]
-      url_for_date <- df$url[df$sampDate == date & df$metric == Metric]  # Filter by Metric
+      date_str <- format(unique_dates[i], "%Y-%m-%d")
+      url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  # Filter by Metric
       r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
       
       if (inherits(r, "try-error")) {
-        print(paste0("Warning: Error fetching raster for ", formatted_dates[i], " and metric ", Metric))
+        print(paste0("Warning: Error fetching raster for ", date_str, " and metric ", Metric))
       } else if (!inherits(r, "SpatRaster")) {
-        print(paste0("Warning: Fetched object is not a SpatRaster for ", formatted_dates[i], " and metric ", Metric))
+        print(paste0("Warning: Fetched object is not a SpatRaster for ", date_str, " and metric ", Metric))
       } else {
-        extracted_vals <- extract(r, XYdata[dates == unique_dates[i], , drop = FALSE])  # Include 'drop = FALSE'
-        XYdata[dates == unique_dates[i], col_name] <- extracted_vals[[2]]
+        extracted_vals <- extract(r, XYdata[dates == unique_dates[i], , drop = FALSE])  
+        extracted_vals_list[[i]] <- extracted_vals[[2]]  # Store the extracted value
       }
+    }
+    
+    # Assign the extracted values back to the correct rows in XYdata
+    for (i in 1:length(unique_dates)) {
+      XYdata[dates == unique_dates[i], col_name] <- extracted_vals_list[[i]]
     }
   }
   
+  #Reproject back to original data
   XYdata <- st_transform(XYdata, crs = original_crs)
+  
+  #Remove formatted date field
+  XYdata <- XYdata %>%
+    select(-formatted_dates)
   
   return(XYdata)
 }
