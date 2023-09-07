@@ -20,4 +20,5 @@ Imports:
   terra,
   sf,
   sp,
-  tidyverse
+  tidyverse,
+  snowfall

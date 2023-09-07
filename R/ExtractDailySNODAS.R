@@ -46,11 +46,11 @@ ExtractDailySNODAS <- function(XYdata = data,
   df <- data.frame(t(sapply(dat, c)))
   df$sampDate <- as.POSIXct(unlist(df$sampDate))
   dates <- as.POSIXct(df$sampDate)
-
+  
+  original_crs <- st_crs(XYdata) 
+  
   dates <- XYdata[[datesname]]
 
-  names(XYdata)[1] <- "date"
-  dates <- XYdata$date
   if (!inherits(dates, "POSIXct")) 
     stop("Your datesname column is not POSIXct")
   if (any(is.na(dates))) 
@@ -88,6 +88,7 @@ ExtractDailySNODAS <- function(XYdata = data,
     }
   }
   
+  XYdata <- st_transform(XYdata, crs = original_crs)
   
   return(XYdata)
 }
