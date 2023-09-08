@@ -35,7 +35,8 @@ ExtractDailySNODAS <- function(XYdata = data,
   # Create the formatted_dates column
   unique_dates <- unique(XYdata[[datesname]])
   formatted_dates <- paste0(format(unique_dates, "%Y-%m-%d"))
-  XYdata$formatted_dates <- formatted_dates
+
+  XYdata$formatted_dates <- format(XYdata[[datesname]], "%Y-%m-%d")
   
   # Determine the start and end dates from the formatted_dates column
   start_date <- min(formatted_dates)
