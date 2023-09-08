@@ -80,6 +80,13 @@ ExtractDailySNODAS <- function(XYdata = data,
       date <- formatted_dates[i]
       date_str <- format(unique_dates[i], "%Y-%m-%d")
       url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  # Filter by Metric
+      
+      if (length(url_for_date) == 0) {
+        # No raster available for this date and metric
+        extracted_vals_list[[i]] <- NA
+        next  # Skip to the next iteration
+      }
+      
       r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
       if (inherits(r, "try-error")) {
         print(paste0("Warning: Error fetching raster for ", date_str, " and metric ", Metric))
