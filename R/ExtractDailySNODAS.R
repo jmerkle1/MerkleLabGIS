@@ -16,6 +16,7 @@
 #' @import terra
 #' @import jsonlite
 #' @import tidyverse
+#' @import parallel
 #' @import httr
 #' @import dplyr
 #' @export
@@ -33,6 +34,8 @@ ExtractDailySNODAS <- function(XYdata = data,
   
   if (!inherits(XYdata, "sf"))
     stop("XYdata is not an sf object")
+  require("sf")
+  require("parallel")
   
   # Create the formatted_dates column
   unique_dates <- unique(XYdata[[datesname]])
