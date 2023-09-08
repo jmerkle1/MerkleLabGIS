@@ -7,6 +7,7 @@
 #' @param XYdata sf point object
 #' @param Metrics character vector of SNODAS metrics to use (SWE or SnowDepth)
 #' @param datesname name of your column representing date as POSIXct
+#' @param num_cores number of cores to use for parallel processing
 #' @return Returns a vector with length of XYdata with the point/date values of SNODASMetrics
 #' 
 #' 
@@ -27,7 +28,8 @@
 
 ExtractDailySNODAS <- function(XYdata = data,
                                datesname = "date",
-                               Metrics = c("SWE", "SnowDepth")) {
+                               Metrics = c("SWE", "SnowDepth"),
+                               num_cores = 4) {
   
   if (!inherits(XYdata, "sf"))
     stop("XYdata is not an sf object")
@@ -65,43 +67,45 @@ ExtractDailySNODAS <- function(XYdata = data,
   
   XYdata <- st_transform(XYdata, crs = 5072)
   
-  for (Metric in Metrics) {
-    productName <- Metric
+  # Parallel processing setup
+  cl <- makeCluster(num_cores)
+  
+  clusterEvalQ(cl, {
+    library(terra)
+    library(sf)
     
-    # Initialize a new column for extracted Metric values
-    col_name <- paste0("Snodas_", productName)
-    XYdata[[col_name]] <- NA
-    
-    # Create a list to store extracted values
-    extracted_vals_list <- list()
-    
-    # Loop over unique_dates and extract values
-    for (i in 1:length(unique_dates)) {
-      date <- formatted_dates[i]
-      date_str <- format(unique_dates[i], "%Y-%m-%d")
-      url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  # Filter by Metric
-      
-      if (length(url_for_date) == 0) {
-        # No raster available for this date and metric
-        extracted_vals_list[[i]] <- NA
-        next  # Skip to the next iteration
-      }
-      
-      r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
-      if (inherits(r, "try-error")) {
-        print(paste0("Warning: Error fetching raster for ", date_str, " and metric ", Metric))
-      } else if (!inherits(r, "SpatRaster")) {
-        print(paste0("Warning: Fetched object is not a SpatRaster for ", date_str, " and metric ", Metric))
-      } else {
-        extracted_vals <- extract(r, XYdata[dates == unique_dates[i], , drop = FALSE])
-        extracted_vals_list[[i]] <- extracted_vals[[2]]  # Store the extracted value
-      }
+  })
+  
+  # Parallel function for extraction
+  parallel_extract <- function(date_index, XYdata, Metrics, formatted_dates, unique_dates, df) {
+    date <- formatted_dates[date_index]
+    date_str <- format(unique_dates[date_index], "%Y-%m-%d")
+    url_for_date <- df$url[df$sampDate == date_str & df$metric == Metrics]  # Filter by Metric
+    if (length(url_for_date) == 0) {
+      return(NA)  # No raster available for this date and metric
     }
-    
-    # Assign the extracted values to the correct rows in XYdata
-    for (i in 1:length(unique_dates)) {
-      XYdata[dates == unique_dates[i], col_name] <- extracted_vals_list[[i]]
+    r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
+    if (inherits(r, "try-error")) {
+      print(paste0("Warning: Error fetching raster for ", date_str, " and metric ", Metrics))
+      return(NA)
+    } else if (!inherits(r, "SpatRaster")) {
+      print(paste0("Warning: Fetched object is not a SpatRaster for ", date_str, " and metric ", Metrics))
+      return(NA)
+    } else {
+      extracted_vals <- terra::extract(r, XYdata[dates == unique_dates[date_index], , drop = FALSE])
+      return(extracted_vals[[2]])  # Return the extracted value
     }
+  }
+  
+  extracted_vals_list <- clusterApply(cl, seq_along(unique_dates), function(i) {
+    parallel_extract(i, XYdata, Metrics, formatted_dates, unique_dates, df)
+  })
+  
+  stopCluster(cl)
+  
+  for (i in seq_along(unique_dates)) {
+    col_name <- paste0("Snodas_", Metrics)
+    XYdata[dates == unique_dates[i], col_name] <- extracted_vals_list[[i]]
   }
   
   # Reproject back to original data
