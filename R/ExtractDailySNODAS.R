@@ -26,7 +26,6 @@
 #' 
 
 
-
 ExtractDailySNODAS <- function(XYdata = data,
                                datesname = "date",
                                Metrics = c("SWE", "SnowDepth"),
@@ -36,11 +35,12 @@ ExtractDailySNODAS <- function(XYdata = data,
     stop("XYdata is not an sf object")
   require("sf")
   require("parallel")
+  require("terra")
   
   # Create the formatted_dates column
   unique_dates <- unique(XYdata[[datesname]])
   formatted_dates <- paste0(format(unique_dates, "%Y-%m-%d"))
-
+  
   XYdata$formatted_dates <- format(XYdata[[datesname]], "%Y-%m-%d")
   
   # Determine the start and end dates from the formatted_dates column
@@ -80,19 +80,19 @@ ExtractDailySNODAS <- function(XYdata = data,
   })
   
   # Parallel function for extraction
-  parallel_extract <- function(date_index, XYdata, Metrics, formatted_dates, unique_dates, df) {
+  parallel_extract <- function(date_index, XYdata, Metric, formatted_dates, unique_dates, df) {
     date <- formatted_dates[date_index]
     date_str <- format(unique_dates[date_index], "%Y-%m-%d")
-    url_for_date <- df$url[df$sampDate == date_str & df$metric == Metrics]  # Filter by Metric
+    url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  # Filter by Metric
     if (length(url_for_date) == 0) {
       return(NA)  # No raster available for this date and metric
     }
     r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
     if (inherits(r, "try-error")) {
-      print(paste0("Warning: Error fetching raster for ", date_str, " and metric ", Metrics))
+      print(paste0("Warning: Error fetching raster for ", date_str, " and metric ", Metric))
       return(NA)
     } else if (!inherits(r, "SpatRaster")) {
-      print(paste0("Warning: Fetched object is not a SpatRaster for ", date_str, " and metric ", Metrics))
+      print(paste0("Warning: Fetched object is not a SpatRaster for ", date_str, " and metric ", Metric))
       return(NA)
     } else {
       extracted_vals <- terra::extract(r, XYdata[dates == unique_dates[date_index], , drop = FALSE])
@@ -100,16 +100,18 @@ ExtractDailySNODAS <- function(XYdata = data,
     }
   }
   
-  extracted_vals_list <- clusterApply(cl, seq_along(unique_dates), function(i) {
-    parallel_extract(i, XYdata, Metrics, formatted_dates, unique_dates, df)
-  })
+  for (Metric in Metrics) {
+    extracted_vals_list <- clusterApply(cl, seq_along(unique_dates), function(i) {
+      parallel_extract(i, XYdata, Metric, formatted_dates, unique_dates, df)
+    })
+    
+    for (i in seq_along(unique_dates)) {
+      col_name <- paste0("Snodas_", Metric)
+      XYdata[dates == unique_dates[i], col_name] <- extracted_vals_list[[i]]
+    }
+  }
   
   stopCluster(cl)
-  
-  for (i in seq_along(unique_dates)) {
-    col_name <- paste0("Snodas_", Metrics)
-    XYdata[dates == unique_dates[i], col_name] <- extracted_vals_list[[i]]
-  }
   
   # Reproject back to original data
   XYdata <- st_transform(XYdata, crs = original_crs)
