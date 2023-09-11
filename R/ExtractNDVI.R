@@ -74,6 +74,11 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
       temp <- XYdata[XYdata$year==u[i],]
       if(metric %in% c("MaxNDVIDay","MaxIRGday","SpringStartDay","SpringEndDay","IntegratedNDVI","SpringLength")){
         selected_url <- MODIS_NDVI$url[MODIS_NDVI$filename == paste0("MOD09Q1_", u[i], "_", metric, ".tif")]
+        if (length(selected_url) == 0) {
+          # File not found, set the value to NA
+          toreturn <- data.frame(unique = temp$unique, setNames(list(NA), metric))
+        } else {
+        
         stk <- terra::rast(paste0("/vsicurl/", selected_url))
         
         stk_5072 <- terra::project(stk, "EPSG:5072")
@@ -81,49 +86,71 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
 
         toreturn <- data.frame(unique = temp$unique, 
                                setNames(list(vals), metric))
+        }
         names(toreturn) <- c("unique", metric)
         return(toreturn)
       }else{
         if(metric %in% c("SpringScale","MaxBrownDownDate","SE_springDLCfit")){
           if(metric == "SpringScale"){
             selected_url <- MODIS_NDVI$url[MODIS_NDVI$filename == paste0("DLC_", u[i], "_scalS_Estimate.tif")]
-            stk <- terra::rast(paste0("/vsicurl/", selected_url))
+            if (length(selected_url) == 0) {
+              # File not found, set the value to NA
+              toreturn <- data.frame(unique = temp$unique, setNames(list(NA), metric))
+            } else {
+             stk <- terra::rast(paste0("/vsicurl/", selected_url))
             
             
             stk_5072 <- terra::project(stk, "EPSG:5072")
             vals <- terra::extract(stk_5072, temp)$layer 
             
             toreturn <- data.frame(unique=temp$unique, vals=vals)
+            }
             names(toreturn) <- c("unique", metric)
             return(toreturn)
           }
           if(metric == "MaxBrownDownDate"){
             
             selected_url <- MODIS_NDVI$url[MODIS_NDVI$filename == paste0("DLC_", u[i], "_xmidA_Estimate.tif")]
+            if (length(selected_url) == 0) {
+              # File not found, set the value to NA
+              toreturn <- data.frame(unique = temp$unique, setNames(list(NA), metric))
+            } else {
             stk <- terra::rast(paste0("/vsicurl/", selected_url))
             
             stk_5072 <- terra::project(stk, "EPSG:5072")
             vals <- terra::extract(stk_5072, temp)$layer 
             
             toreturn <- data.frame(unique=temp$unique, vals=vals)
+            }
             names(toreturn) <- c("unique", metric)
             return(toreturn)
           }
           if(metric == "SE_springDLCfit"){
             selected_url <- MODIS_NDVI$url[MODIS_NDVI$filename == paste0("DLC_", u[i], "_xmidS_SD_Estimate.tif")]
+            if (length(selected_url) == 0) {
+              # File not found, set the value to NA
+              toreturn <- data.frame(unique = temp$unique, setNames(list(NA), metric))
+            } else {
             stk <- terra::rast(paste0("/vsicurl/", selected_url))
             
             stk_5072 <- terra::project(stk, "EPSG:5072")
             vals <- terra::extract(stk_5072, temp)$layer 
             
             toreturn <- data.frame(unique=temp$unique, vals=vals)
+            }
             names(toreturn) <- c("unique", metric)
             return(toreturn)
           }
         }else{
           filtered_DLC <- MODIS_NDVI[grep("^DLC_", MODIS_NDVI$filename), ]
           
+          
+          
           stk <- filtered_DLC$url
+          if (length(stk) == 0) {
+            # File not found, set the value to NA
+            vals <- NA
+          } else{
           stk <- grep(u[i],stk,value=T)
 
           stk <- stk[grepl("SD",stk)==FALSE]
@@ -136,7 +163,7 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
           
           # Combine the extracted values
           vals <- do.call(cbind, vals_list)
-          
+          }
           time=1:365
           if(metric == c("NDVI_scaled")){ 
             vals <- do.call(rbind, lapply(1:nrow(vals), function(e){
@@ -166,6 +193,7 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
             vals <- do.call(c, lapply(1:nrow(vals), function(e){
               return(vals[e,temp$jul[e]])
             }))
+            
             toreturn <- data.frame(unique=temp$unique, vals=vals)
             names(toreturn) <- c("unique", metric)
             return(toreturn)
@@ -193,4 +221,3 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   
   return(XYdata[,c("unique", datesname, NDVImetric)])
 }
-
