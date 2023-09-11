@@ -70,48 +70,47 @@ ExtractDailySNODAS <- function(XYdata = data,
   
   XYdata <- st_transform(XYdata, crs = 5072)
   
-  # Parallel processing setup
-  cl <- makeCluster(num_cores)
+  # Setup cluster
+  clust <- makeCluster(num_cores)
   
-  clusterEvalQ(cl, {
-    library(terra)
+  # export the objects you need for your calculations from your environment to each node's environment
+  clusterExport(clust, varlist = c("XYdata", "Metrics", "df"),envir = environment() )
+  
+  dat_snow <- do.call(rbind, clusterApplyLB(clust, 1:nrow(XYdata), function(i){
     library(sf)
+    library(terra)
+    row <- XYdata[i, ]
+    results <- data.frame()
     
-  })
-  
-  # Parallel function for extraction
-  parallel_extract <- function(date_index, XYdata, Metric, formatted_dates, unique_dates, df) {
-    date <- formatted_dates[date_index]
-    date_str <- format(unique_dates[date_index], "%Y-%m-%d")
-    url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  # Filter by Metric
-    if (length(url_for_date) == 0) {
-      return(NA)  # No raster available for this date and metric
+    for (Metric in Metrics) {
+      date_str <- row$formatted_dates
+      url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  # Filter by Metric
+      if (length(url_for_date) == 0) {
+        extracted_val <- NA  # No raster available for this date and metric
+      } else {
+        r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
+        if (inherits(r, "SpatRaster")) {
+          extracted_vals <- terra::extract(r, row)  # Extract all values from the raster
+          if (length(extracted_vals) >= 2) {
+            extracted_val <- extracted_vals[2]  # Extract the second value (index 2)
+          } else {
+            extracted_val <- NA
+          }
+        } else {
+          extracted_val <- NA
+        }
+      }
+      # Create a column for the metric and store the extracted value
+      results[1, Metric] <- extracted_val
     }
-    r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
-    if (inherits(r, "try-error")) {
-      print(paste0("Warning: Error fetching raster for ", date_str, " and metric ", Metric))
-      return(NA)
-    } else if (!inherits(r, "SpatRaster")) {
-      print(paste0("Warning: Fetched object is not a SpatRaster for ", date_str, " and metric ", Metric))
-      return(NA)
-    } else {
-      extracted_vals <- terra::extract(r, XYdata[dates == unique_dates[date_index], , drop = FALSE])
-      return(extracted_vals[[2]])  # Return the extracted value
-    }
-  }
-  
-  for (Metric in Metrics) {
-    extracted_vals_list <- clusterApply(cl, seq_along(unique_dates), function(i) {
-      parallel_extract(i, XYdata, Metric, formatted_dates, unique_dates, df)
-    })
     
-    for (i in seq_along(unique_dates)) {
-      col_name <- paste0("Snodas_", Metric)
-      XYdata[dates == unique_dates[i], col_name] <- extracted_vals_list[[i]]
-    }
-  }
+    return(results)
+  }))
   
-  stopCluster(cl)
+  stopCluster(clust)   # Stop the parallelization framework
+  
+  # Bind the extracted data to the original XYdata based on the date
+  XYdata <- cbind(XYdata, dat_snow)
   
   # Reproject back to original data
   XYdata <- st_transform(XYdata, crs = original_crs)
