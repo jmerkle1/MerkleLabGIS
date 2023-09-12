@@ -45,6 +45,7 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
          IntegratedNDVI, NDVI_scaled, IRG_scaled, MaxBrownDownDate, SE_springDLCfit,SpringScale, SpringLength, or sumIRG.")
   }
   
+  original_crs <- st_crs(XYdata)
   
   dt <- bucket()
   MODIS_NDVI <- dt[dt$Category == "MODIS_NDVI",]
@@ -144,66 +145,86 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
         }else{
           filtered_DLC <- MODIS_NDVI[grep("^DLC_", MODIS_NDVI$filename), ]
           
-          
-          
           stk <- filtered_DLC$url
+          
+          stk <- grep(u[i], stk, value = TRUE)
+          
+          stk <- stk[grepl("SD", stk) == FALSE]
+          stk <- stk[c(4, 2, 3, 1)]  # need to reorder so they are in the correct order for the logistic equation
+          
+          # Check if stk is empty
           if (length(stk) == 0) {
-            # File not found, set the value to NA
-            vals <- NA
-          } else{
-          stk <- grep(u[i],stk,value=T)
-
-          stk <- stk[grepl("SD",stk)==FALSE]
-          stk <- stk[c(4,2,3,1)]      # need to reorder so they are in the correct order for teh logistic equation
-          stk <- lapply(paste0("/vsicurl/",stk), terra::rast)
-          
-          stk <- lapply(stk, function(rst) terra::project(rst, "EPSG:5072"))
-          
-          vals_list <- lapply(stk, function(rst) terra::extract(rst, temp)$layer)
-          
-          # Combine the extracted values
-          vals <- do.call(cbind, vals_list)
-          }
-          time=1:365
-          if(metric == c("NDVI_scaled")){ 
-            vals <- do.call(rbind, lapply(1:nrow(vals), function(e){
-              (1/(1+exp((vals[e,1]-time)/vals[e,2])))-(1/(1+exp((vals[e,3]-time)/vals[e,4])))
-            }))
-            vals <- do.call(c, lapply(1:nrow(vals), function(e){
-              return(vals[e,temp$jul[e]])
-            }))
-            toreturn <- data.frame(unique=temp$unique, vals=vals)
-            names(toreturn) <- c("unique", metric)
-            return(toreturn)
-          }else{
-            vals <- do.call(rbind, lapply(1:nrow(vals), function(e){
-              temp <- (1/(1+exp((vals[e,1]-time)/vals[e,2])))
-              temp <- c((diff(temp)/diff(time)),NA)
-              temp[temp < 0] <- 0
-              if(all(is.na(temp))==FALSE){
-                temp <- (temp-min(temp, na.rm=TRUE))/(max(temp, na.rm=TRUE)-min(temp, na.rm=TRUE))
-              }
-              if(metric=="sumIRG"){
-                temp[is.na(temp)==TRUE] <- 0
-                return(cumsum(temp))
-              }else{
-                return(temp)
-              }
-            }))
-            vals <- do.call(c, lapply(1:nrow(vals), function(e){
-              return(vals[e,temp$jul[e]])
-            }))
+            vals <- rep(NA, 365)  # Set 'NA' as the value when stk is empty
+          } else {
             
-            toreturn <- data.frame(unique=temp$unique, vals=vals)
-            names(toreturn) <- c("unique", metric)
-            return(toreturn)
+            stk <- lapply(paste0("/vsicurl/", stk), function(url) {
+              tryCatch(
+                {
+                  terra::rast(url)
+                },
+                error = function(e) {
+                  warning(paste("[rast] Error:", e$message))
+                  return(NULL)  # Return NULL for failed URLs
+                }
+              )
+            })
+            
+            # Remove NULL values from stk
+            stk <- stk[!sapply(stk, is.null)]
+            
+            if (length(stk) == 0) {
+              vals <- rep(NA, 365)  # Set 'NA' as the value when URLs fail
+            } else {
+              stk <- lapply(stk, function(rst) terra::project(rst, "EPSG:5072"))
+              
+              vals_list <- lapply(stk, function(rst) terra::extract(rst, temp)$layer)
+              
+              # Combine the extracted values
+              vals <- do.call(cbind, vals_list)
+              
+              time <- 1:365
+              if (metric == c("NDVI_scaled")) {
+                vals <- do.call(rbind, lapply(1:nrow(vals), function(e) {
+                  (1 / (1 + exp((vals[e, 1] - time) / vals[e, 2]))) - (1 / (1 + exp((vals[e, 3] - time) / vals[e, 4])))
+                }))
+                vals <- do.call(c, lapply(1:nrow(vals), function(e) {
+                  return(vals[e, temp$jul[e]])
+                }))
+                toreturn <- data.frame(unique = temp$unique, vals = vals)
+                names(toreturn) <- c("unique", metric)
+                return(toreturn)
+              } else {
+                vals <- do.call(rbind, lapply(1:nrow(vals), function(e) {
+                  temp <- (1 / (1 + exp((vals[e, 1] - time) / vals[e, 2])))
+                  temp <- c((diff(temp) / diff(time)), NA)
+                  temp[temp < 0] <- 0
+                  if (all(is.na(temp)) == FALSE) {
+                    temp <- (temp - min(temp, na.rm = TRUE)) / (max(temp, na.rm = TRUE) - min(temp, na.rm = TRUE))
+                  }
+                  if (metric == "sumIRG") {
+                    temp[is.na(temp) == TRUE] <- 0
+                    return(cumsum(temp))
+                  } else {
+                    return(temp)
+                  }
+                }))
+              }
+              
+              vals <- do.call(c, lapply(1:nrow(vals), function(e) {
+                return(vals[e, temp$jul[e]])
+              }))
+              
+              toreturn <- data.frame(unique = temp$unique, vals = vals)
+              names(toreturn) <- c("unique", metric)
+              return(toreturn)
+            }
           }
+          
         }
       }
     }))
     
     vals_list[[metric]] <- vals # Store the result for this metric in the list
-    
     
   }
  
@@ -218,6 +239,8 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   }
   
   XYdata <- XYdata[order(XYdata$unique),]
+  # Reproject back to original data
+  XYdata <- st_transform(XYdata, crs = original_crs)
   
   return(XYdata[,c("unique", datesname, NDVImetric)])
 }

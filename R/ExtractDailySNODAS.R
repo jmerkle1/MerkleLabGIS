@@ -84,21 +84,17 @@ ExtractDailySNODAS <- function(XYdata = data,
     
     for (Metric in Metrics) {
       date_str <- row$formatted_dates
-      url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  # Filter by Metric
+      
+      # Filter url by Metric and date
+      url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  
+      
       if (length(url_for_date) == 0) {
         extracted_val <- NA  # No raster available for this date and metric
       } else {
+        
+        #Extract raster
         r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
-        if (inherits(r, "SpatRaster")) {
-          extracted_vals <- terra::extract(r, row)  # Extract all values from the raster
-          if (length(extracted_vals) >= 2) {
-            extracted_val <- extracted_vals[2]  # Extract the second value (index 2)
-          } else {
-            extracted_val <- NA
-          }
-        } else {
-          extracted_val <- NA
-        }
+        extracted_val <- terra::extract(r, row)[,2]  # Extract second value from the raster
       }
       # Create a column for the metric and store the extracted value
       results[1, Metric] <- extracted_val
@@ -107,7 +103,8 @@ ExtractDailySNODAS <- function(XYdata = data,
     return(results)
   }))
   
-  stopCluster(clust)   # Stop the parallelization framework
+  # Stop the parallelization framework
+  stopCluster(clust)   
   
   # Bind the extracted data to the original XYdata based on the date
   XYdata <- cbind(XYdata, dat_snow)

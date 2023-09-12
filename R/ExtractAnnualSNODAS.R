@@ -49,6 +49,9 @@ ExtractAnnualSNODAS <- function(point_data,
   } else {
     metric <- metric_name
   }
+  #Save projection
+  original_crs <- st_crs(point_data)
+  
   
   # Get the data
   dat <- httr::POST("https://devise.uwyo.edu/umbraco/api/Snodasapi/GetDerivedAnnualData", 
@@ -76,6 +79,9 @@ ExtractAnnualSNODAS <- function(point_data,
   df <- as.data.frame(Snodas)
   names(df) <- names(rs)
   result <- cbind(point_data, df)
+  
+  # Reproject back to original data
+  result <- st_transform(result, crs = original_crs)
   
   return(result)
 }
