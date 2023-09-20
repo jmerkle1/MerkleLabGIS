@@ -38,11 +38,12 @@ ExtractRAP <- function(XYdata = d_rsf,
   RAP <- dt[dt$Category == "Landcover_RAP",]
   drs <- RAP$filename
   
-  if(all(c("raster","sf","parallel") %in% installed.packages()[,1])==FALSE)
+  if(all(c("terra","sf","parallel") %in% installed.packages()[,1])==FALSE)
     stop("You must install the following packages: raster, sf, and parallel")
-  require("raster")
+  require("terra")
   require("sf")
   require("parallel")
+  
   if(inherits(XYdata, "sf") == FALSE) stop("XYdata is not an sf object")
   # dates <- st_drop_geometry(XYdata)[,datesname]
   dates <- st_drop_geometry(XYdata)[[datesname]]
@@ -51,7 +52,7 @@ ExtractRAP <- function(XYdata = d_rsf,
     stop("XYdata[,datesname] is not POSIXct")
   if(any(is.na(dates) == TRUE)) 
     stop("You have NAs in your date column")
-  # drs <- dir(RAPfolder)
+
   if("temp" %in% colnames(XYdata))
     stop("Please remove the column named 'temp' in your XYdata. Thank you!")
   
@@ -62,6 +63,7 @@ ExtractRAP <- function(XYdata = d_rsf,
                     Cover_AnnualForbsGrasses,Cover_BareGround,Cover_Litter,Cover_PerennialForbsGrasses,
                        Cover_Shrubs,Cover_Trees.")
   }
+  
   tz <- attr(dates,"tzone")
   year <- as.numeric(format(dates, "%Y"))
   jul <- as.numeric(format(dates, "%j"))
@@ -81,10 +83,8 @@ ExtractRAP <- function(XYdata = d_rsf,
   
 
   toreturn <- do.call(rbind, clusterApplyLB(clust, 1:length(yrs), function(i){
-    # need library() here for the packages your calculations require for your calculations
     library(sf)
-    library(raster)
-    print(paste("Processing index:", i, "for year", yrs[i]))
+    library(terra)
     
     #grab the data for the given year
     tmp <- XYdata[year_bio == yrs[i],]
@@ -107,7 +107,8 @@ ExtractRAP <- function(XYdata = d_rsf,
     
     return(tmp)
   }))
-  stopCluster(clust)   # you must stop the parallelization framework
+  
+  stopCluster(clust)  
   
   geom_cols <- grep("^geometry", names(toreturn), value = TRUE)
   if(length(geom_cols) > 1) {

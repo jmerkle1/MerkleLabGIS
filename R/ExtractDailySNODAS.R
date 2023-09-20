@@ -29,23 +29,38 @@
 ExtractDailySNODAS <- function(XYdata = data,
                                datesname = "date",
                                Metrics = c("SWE", "SnowDepth"),
-                               num_cores = 4) {
+                               num_cores = NULL) {
   
   if (!inherits(XYdata, "sf"))
     stop("XYdata is not an sf object")
+  
   require("sf")
   require("parallel")
   require("terra")
   
-  # Create the formatted_dates column
-  unique_dates <- unique(XYdata[[datesname]])
-  formatted_dates <- paste0(format(unique_dates, "%Y-%m-%d"))
+  #Check cores
+  if(is.null(num_cores)){
+    num_cores <- detectCores()-1
+  }else{
+    num_cores <- num_cores
+  }
+  
+  #Check date column
+  dates <- XYdata[[datesname]]
+  
+  if (!inherits(dates, "POSIXct"))
+    stop("Your datesname column is not POSIXct")
+  if (any(is.na(dates)))
+    stop("You have NAs in your datesname column")
+  
+  rm(dates)
   
   XYdata$formatted_dates <- format(XYdata[[datesname]], "%Y-%m-%d")
   
-  # Determine the start and end dates from the formatted_dates column
-  start_date <- min(formatted_dates)
-  end_date <- max(formatted_dates)
+  
+  # Determine the start and end dates for the SNODAS api
+  start_date <- min(XYdata$formatted_dates)
+  end_date <- max(XYdata$formatted_dates)
   
   dat <- httr::POST("https://devise.uwyo.edu/Umbraco/api/SnodasApi/GetData",
                     httr::content_type_json(),
@@ -59,64 +74,65 @@ ExtractDailySNODAS <- function(XYdata = data,
   df$sampDate <- as.POSIXct(unlist(df$sampDate))
   dates <- as.POSIXct(df$sampDate)
   
+  #Save original crs
   original_crs <- st_crs(XYdata)
   
-  dates <- XYdata[[datesname]]
-  
-  if (!inherits(dates, "POSIXct"))
-    stop("Your datesname column is not POSIXct")
-  if (any(is.na(dates)))
-    stop("You have NAs in your datesname column")
-  
+  #Transform for extraction
   XYdata <- st_transform(XYdata, crs = 5072)
   
-  # Setup cluster
+  XYdata <- XYdata[order(XYdata$date), ]
+  
+  XYtemp <- XYdata[,c("formatted_dates","geometry")]
+  
+  unique_dates <- unique(XYtemp$formatted_dates)
+  
+  # Initialize an empty list
+  dat_snow_list <- list()  
+  
   clust <- makeCluster(num_cores)
   
-  # export the objects you need for your calculations from your environment to each node's environment
-  clusterExport(clust, varlist = c("XYdata", "Metrics", "df"),envir = environment() )
   
-  dat_snow <- do.call(rbind, clusterApplyLB(clust, 1:nrow(XYdata), function(i){
-    library(sf)
-    library(terra)
-    row <- XYdata[i, ]
-    results <- data.frame()
-    
-    for (Metric in Metrics) {
-      date_str <- row$formatted_dates
+  clusterEvalQ(clust, library(sf))
+  
+  # Export the objects you need for your calculations from your environment to each node's environment
+  clusterExport(clust, varlist = c("XYtemp", "unique_dates", "Metrics", "df", "dat_snow_list"), envir = environment())
+  # Parallelize the extraction process
+  
+  system.time({
+    dat_snow_list <- clusterApplyLB(clust, 1:length(unique_dates), function(i) {
       
-      # Filter url by Metric and date
-      url_for_date <- df$url[df$sampDate == date_str & df$metric == Metric]  
+      row <- XYtemp[XYtemp$formatted_dates == unique_dates[i], ]
+      date_str <- row$formatted_dates[1]
       
-      if (length(url_for_date) == 0) {
-        extracted_val <- NA  # No raster available for this date and metric
-      } else {
+      toreturn <- do.call(cbind, lapply(Metrics, function(z) {
+        # Filter url by Metric and date
+        url_for_date <- df$url[df$sampDate == date_str & df$metric == z]
         
-        #Extract raster
-        r <- try(terra::rast(as.character(url_for_date)), silent = TRUE)
-        extracted_val <- terra::extract(r, row)[,2]  # Extract second value from the raster
-      }
-      # Create a column for the metric and store the extracted value
-      results[1, Metric] <- extracted_val
-    }
-    
-    return(results)
-  }))
+        if (length(url_for_date) == 0) {
+          return(rep(NA, nrow(row)))  # No raster available for this date and metric
+        } else {
+          # Extract raster
+          r <- terra::rast(as.character(url_for_date))
+          return(terra::extract(r, row)[, 2])  # Extract second value from the raster
+        }
+      }))
+      colnames(toreturn) <- Metrics  
+      return(toreturn)
+    })
+  })
   
-  # Stop the parallelization framework
-  stopCluster(clust)   
+  # Stop the cluster
+  stopCluster(clust)
   
-  # Bind the extracted data to the original XYdata based on the date
-  XYdata <- cbind(XYdata, dat_snow)
+  # Combine extracted data from the list into a data frame
+  df_list <- lapply(dat_snow_list, as.data.frame)
+  dat_snow_df <- do.call(rbind, df_list)
+  
+  # Bind the extracted data to the original XYdata
+  XYdata <- cbind(XYdata, dat_snow_df)
   
   # Reproject back to original data
   XYdata <- st_transform(XYdata, crs = original_crs)
   
-  # Remove formatted date column
-  XYdata <- XYdata %>%
-    select(-formatted_dates)
-  
   return(XYdata)
 }
-
-
