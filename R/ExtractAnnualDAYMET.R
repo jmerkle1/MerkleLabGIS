@@ -1,6 +1,6 @@
 #' DAYMET Extraction Function
 #' 
-#' The Extract DAYMET function processes data from DAYMET
+#' The Extract DAYMET function processes annual data from DAYMET
 #' to extract specific metrics for given geographic points and dates.Users provide point spatial data
 #', desired DAYMET metrics ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin"), and a date range. It extracts metric values for the provided points. 
 #' 
@@ -24,7 +24,7 @@
 #' 
 
 
-ExtractDAYMET <- function(point_data, 
+ExtractAnnualDAYMET <- function(point_data, 
                                 start_date = "2005-01-01", 
                                 end_date = "2010-01-01", 
                                 metric_name = NULL) {

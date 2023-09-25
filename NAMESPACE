@@ -1,4 +1,5 @@
-export(ExtractDAYMET)
+export(ExtractAnnualDAYMET)
+export(ExtractDailyDAYMET)
 export(ExtractAnnualSNODAS)
 export(ExtractDailySNODAS)
 export(ExtractRAP)
