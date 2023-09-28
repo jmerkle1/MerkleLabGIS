@@ -76,8 +76,8 @@ result <- ExtractDailySNODAS(XYdata = pts_sf,
 ```
 
 
-### Extract DAYMET
-The Extract DAYMET function processes data from DAYMET to extract specific metrics for given geographic points and dates. Provide point spatial data, desired DAYMET metrics ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin"), and a date range to run the DAYMET function.
+### Extract Annual DAYMET
+The Extract Annual DAYMET function processes data from DAYMET to extract specific metrics for given geographic points and dates. Provide point spatial data, desired DAYMET metrics ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin"), and a date range to run the DAYMET function.
 ```
 #Sample data
 points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.54731, 45.54731)) %>%
@@ -86,6 +86,29 @@ points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.5473
 maxprcp<- ExtractDAYMET(points, start_date = "2005-01-01", 
                         end_date = "2010-01-01", metric_name = "Maxprcp")
 ```
+
+### Extract Daily DAYMET
+The Extract Daily DAYMET function processes data from DAYMET and extracts specific daily metrics for given geographic points and dates. Provide point spatial data, a column representing date as POSIXct, 
+desired DAYMET metrics (prcp, swe, tmax or tmin) to run our daily DAYMET function. The function extracts metric values for the provided points.
+
+```
+#Sample data
+
+pts <- data.frame(
+  long = runif(5, -111, -104),
+  lat = runif(5, 41, 45),
+  dates = as.POSIXct(sample(seq(as.Date('2010-01-01'), as.Date('2022-12-31'), by="day"), 5, replace = TRUE))
+)
+pts_sf <- st_as_sf(pts, coords = c("long", "lat"), crs = 4326, agr = "constant")
+
+
+result <- ExtractDailyDAYMET(XYdata = pts_sf,
+                             datesname = "dates",
+                             Metrics = c("prcp", "swe", "tmax", "tmin"))  
+
+```
+
+
 ### Crop Rasters
 Crop a list of rasters to a study area from the Merkle Research Group database. Cropped rasters are saved to the local computer.
 ```
