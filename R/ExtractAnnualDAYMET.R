@@ -8,7 +8,7 @@
 #' @param metric_name character vector of DAYMET metrics to use ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin")
 #' @param start_date
 #' @param end_date
-#' @return Returns a vector with length of point_data with the point/date values of RAPmetrics
+#' @return Returns a vector with length of point_data with the point/date values of DAYMET metrics
 #' 
 #' 
 #' @return

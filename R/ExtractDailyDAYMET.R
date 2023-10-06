@@ -8,7 +8,7 @@
 #' @param Metrics character vector of DAYMET metrics to use ("prcp", "swe", "tmax", "tmin")
 #' @param datesname name of your column representing date as POSIXct
 #' @param num_cores number of cores to use for parallel processing
-#' @return Returns a vector with length of XYdata with the point/date values of SNODASMetrics
+#' @return Returns a vector with length of XYdata with the point/date values of DaymetMetrics
 #' 
 #' 
 #' @return

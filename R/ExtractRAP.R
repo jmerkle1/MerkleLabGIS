@@ -27,11 +27,18 @@
 #' 
 #' 
 
-ExtractRAP <- function(XYdata = d_rsf, 
+ExtractRAP <- function(XYdata, 
                        RAPmetric = c("Biomass_AnnualForbsGrasses", "Cover_BareGround"),
                        bio_year_start = 150,
-                       datesname = "date",
-                       maxcpus = detectCores() - 1) {
+                       datesname,
+                       maxcpus = NULL) {
+  
+  #Check cores
+  if(is.null(maxcpus)){
+    maxcpus <- detectCores()-1
+  }else{
+    maxcpus <- maxcpus
+  }
   
   #Fetch RAP data from pathfinder
   dt <- bucket()
@@ -71,8 +78,6 @@ ExtractRAP <- function(XYdata = d_rsf,
   year_bio <- ifelse(jul > bio_year_start, year, year-1)  # bio year... basically, this is the year of the growing season and after scenecense. thus any days prior to bio_year_start in a given calendar year will be given the previous calendar years' RAP value.
   yrs <- unique(year_bio)
   
-  mets <- paste(yrs, RAPmetric, sep="_")
-
   
   # identify cores (use 1 less than you have)
   no_cores <- ifelse(length(yrs) < maxcpus, length(yrs), maxcpus)
@@ -80,41 +85,43 @@ ExtractRAP <- function(XYdata = d_rsf,
   clust <- makeCluster(no_cores) 
   # export the objects you need for your calculations from your environment to each node's environment
   clusterExport(clust, varlist=c("XYdata","year_bio","yrs","drs","RAPmetric","RAP"),envir=environment())
+  rap_list <- list()  
   
-
-  toreturn <- do.call(rbind, clusterApplyLB(clust, 1:length(yrs), function(i){
+  
+  rap_list <- do.call(rbind, clusterApplyLB(clust, 1:length(yrs), function(i){
     library(sf)
     library(terra)
     
-    #grab the data for the given year
+    # grab the data for the given year
     tmp <- XYdata[year_bio == yrs[i],]
     
-    # lop over the metrics for this year
+    # Initialize toreturn dataframe
+    toreturn <- data.frame(matrix(ncol = length(RAPmetric), nrow = nrow(tmp)))
+    colnames(toreturn) <- RAPmetric
+    
+    # loop over the metrics for this year
     for(e in 1:length(RAPmetric)) {
+      
       # This retrieves the URL from the RAP data frame for the given year and metric
       file_url <- paste0("/vsicurl/", RAP$url[RAP$filename == paste0("RAP_", yrs[i], "_", RAPmetric[e], ".tif")])
-
+      
       if(length(file_url) == 0) {
-        stop(paste0("RAP file for year ", yrs[i], " and metric ", RAPmetric[e], " not found in the list."))
+        toreturn[,e] <- NA  # No raster available for this date and metric
+      } else {
+        r <- terra::rast(file_url)
+        toreturn[,e] <- terra::extract(r, tmp)[, 2] 
       }
-      r <- terra::rast(file_url)
-      tmp$temp <- terra::extract(r, tmp)
-      names(tmp)[names(tmp) == "temp"] <- RAPmetric[e]
     }
     
-    rm(r)
-    gc()
-    
-    return(tmp)
+    return(toreturn)
   }))
+  
   
   stopCluster(clust)  
   
-  geom_cols <- grep("^geometry", names(toreturn), value = TRUE)
-  if(length(geom_cols) > 1) {
-    for(col in geom_cols[-1]) {
-      toreturn[[col]] <- NULL
-    }
-  }  
-  return(toreturn)
+  # Bind the extracted data to the original XYdata
+  XYdata <- cbind(XYdata, rap_list)
+  
+  
+  return(XYdata)
 }
