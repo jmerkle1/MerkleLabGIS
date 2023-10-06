@@ -33,6 +33,12 @@ ExtractRAP <- function(XYdata,
                        datesname,
                        maxcpus = NULL) {
   
+  if(all(c("terra","sf","parallel") %in% installed.packages()[,1])==FALSE)
+    stop("You must install the following packages: raster, sf, and parallel")
+  require("terra")
+  require("sf")
+  require("parallel")
+  
   #Check cores
   if(is.null(maxcpus)){
     maxcpus <- detectCores()-1
@@ -44,12 +50,6 @@ ExtractRAP <- function(XYdata,
   dt <- bucket()
   RAP <- dt[dt$Category == "Landcover_RAP",]
   drs <- RAP$filename
-  
-  if(all(c("terra","sf","parallel") %in% installed.packages()[,1])==FALSE)
-    stop("You must install the following packages: raster, sf, and parallel")
-  require("terra")
-  require("sf")
-  require("parallel")
   
   if(inherits(XYdata, "sf") == FALSE) stop("XYdata is not an sf object")
   # dates <- st_drop_geometry(XYdata)[,datesname]
