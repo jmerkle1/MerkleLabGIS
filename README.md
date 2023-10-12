@@ -27,7 +27,13 @@ dt <- bucket()
 ```
 
 ### Extract Rangleland Analysis Platform Data
-The ExtractRAP function processes data from the Rangeland Analysis Platform (RAP) to extract specific metrics for given geographic points and dates.Povide spatial data (XYdata), desired RAP metrics (e.g., Biomass, Cover), a date column name, and a bio year, determining the growing season to run our function. For each year and metric, it fetches the associated RAP raster data set and extracts metric values for the provided points.
+The ExtractRAP function is designed to extract spatially and temporally explicit Rangeland Analysis Platform (RAP) data for given geographic points and dates. To use this function, you need to provide the following inputs:
+
+1. **XYdata**: Spatial data representing the geographic points for which you want to extract RAP metrics.
+2. **RAPmetric**: Specify the metrics you are interested in (e.g., Biomass_AnnualForbsGrasses,Biomass_PerennialForbsGrasses, Cover_AnnualForbsGrasses,Cover_BareGround,Cover_Litter,Cover_PerennialForbsGrasses,Cover_Shrubs,Cover_Trees).
+3. **datesname**: Indicate the name of the column representing date as POSIXct.
+4. **bio_year_start**: This parameter determines the growing season for which you want to run the function. This sets the beginning of the growing season and should be specified as a Julian day (an integer between 1 and 365). If not specified, the default value is 150, corresponding to May 30th. Any dates before the "bio_year_start" will result in the extraction of RAP metrics for the growing season of the prior year.
+5. **maxcpus**: Number of cores to use for parallel processing. If no value is defined, the function will auto detect how many cores are available on your machine. 
 ```
 #Sample data
 set.seed(42) 
@@ -39,24 +45,34 @@ pts <- data.frame(
   dates = as.POSIXct(sample(seq(as.Date('2010/01/01'), as.Date('2022/12/31'), by="day"), 5, replace = TRUE), tz = "UTC")
 )
 pts_sf <- st_as_sf(pts, coords = c("long", "lat"), crs = 4326, agr = "constant")
-rap <- ExtractRAP(pts_sf, RAPmetric = "Cover_BareGround", datesname = "dates", )
+rap <- ExtractRAP(pts_sf, RAPmetric = "Cover_BareGround", datesname = "dates",bio_year_start = 150, maxcpus = 10 )
 ```
 ### Extract Annual SNODAS
 The Extract Annual SNODAS function processes data from SNODAS
-to extract specific annual metrics for given geographic points and dates. Provide point spatial data
-desired SNODAS metrics (e.g., MaxSnowDepth, MaxSWE, MeanSnowDepth), and a date range to run our SNODAS function. The function extracts metric values for the provided points.
+to extract specific annual metrics for given geographic points and dates.To use this function, you need to provide the following inputs:
+
+1. **point_data**: Spatial data representing the geographic points for which you want to extract daily SNODAS metrics.
+2. **start_date**: This is the beginning of the date range from which you want to start extracting the metric.
+3. **end_date**: This indicates the end of the date range up to which you want to extract the metric.
+4. **metric_name**: Specify the metrics you are interested in (e.g., MaxSnowDepth, MaxSWE, MeanSnowDepth).
+
+
 ```
 #Sample data
 points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.54731, 45.54731)) %>%
   sf::st_as_sf(coords = c("x", "y"), crs = 4326)
   
-MaxSnowDepth <- ExtractAnnualSNODAS(points, start_date = "2005-01-01", 
+MaxSnowDepth <- ExtractAnnualSNODAS(point_data = points, start_date = "2005-01-01", 
                         end_date = "2010-01-01", metric_name = "MaxSnowDepth")
 ```
 
 ### Extract Daily SNODAS
-The Extract Daily SNODAS function processes data from SNODAS and extracts specific daily metrics for given geographic points and dates. Provide point spatial data, a column representing date as POSIXct, 
-desired SNODAS metrics (SWE or SnowDepth) to run our daily SNODAS function. The function extracts metric values for the provided points.
+The Extract Daily SNODAS function processes data from SNODAS and extracts specific daily metrics for given geographic points and dates. To use this function, you need to provide the following inputs:
+
+1. **XYdata**: Spatial data representing the geographic points for which you want to extract daily SNODAS metrics.
+3. **datesname**: Indicate the name of the column representing date as POSIXct.
+3. **Metrics**: Specify the metrics you are interested in (SWE or SnowDepth) .
+4. **num_cores**: Number of cores to use for parallel processing. If no value is defined, the function will auto detect how many cores are available on your machine. 
 
 ```
 #Sample data
@@ -71,25 +87,36 @@ pts_sf <- st_as_sf(pts, coords = c("long", "lat"), crs = 4326, agr = "constant")
 
 result <- ExtractDailySNODAS(XYdata = pts_sf,
                              datesname = "dates",
-                             Metrics = c("SWE", "SnowDepth"))  
+                             Metrics = c("SWE", "SnowDepth"), 
+                             num_cores = 10)  
 
 ```
 
 
 ### Extract Annual DAYMET
-The Extract Annual DAYMET function processes data from DAYMET to extract specific metrics for given geographic points and dates. Provide point spatial data, desired DAYMET metrics ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin"), and a date range to run the DAYMET function.
+The Extract Annual DAYMET function processes data from DAYMET to extract specific metrics for given geographic points and dates.To use this function, you need to provide the following inputs:
+
+1. **point_data**: Spatial data representing the geographic points for which you want to extract daily DAYMET metrics.
+2. **start_date**: This is the beginning of the date range from which you want to start extracting the metric.
+3. **end_date**: This indicates the end of the date range up to which you want to extract the metric.
+4. **metric_name**: Specify the metrics you are interested in ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin").
+
 ```
 #Sample data
 points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.54731, 45.54731)) %>%
   sf::st_as_sf(coords = c("x", "y"), crs = 4326)
   
-maxprcp<- ExtractDAYMET(points, start_date = "2005-01-01", 
+maxprcp<- ExtractDAYMET(point_data= points, start_date = "2005-01-01", 
                         end_date = "2010-01-01", metric_name = "Maxprcp")
 ```
 
 ### Extract Daily DAYMET
-The Extract Daily DAYMET function processes data from DAYMET and extracts specific daily metrics for given geographic points and dates. Provide point spatial data, a column representing date as POSIXct, 
-desired DAYMET metrics (prcp, swe, tmax or tmin) to run our daily DAYMET function. The function extracts metric values for the provided points.
+The Extract Daily DAYMET function processes data from DAYMET and extracts specific daily metrics for given geographic points and dates.To use this function, you need to provide the following inputs:
+
+1. **XYdata**: Spatial data representing the geographic points for which you want to extract daily DAYMET metrics.
+2. **datesname**: Indicate the name of the column representing date as POSIXct.
+3. **Metrics**: Specify the metrics you are interested in (prcp, swe, tmax or tmin) .
+4. **num_cores**: Number of cores to use for parallel processing. If no value is defined, the function will auto detect how many cores are available on your machine. 
 
 ```
 #Sample data
@@ -104,7 +131,8 @@ pts_sf <- st_as_sf(pts, coords = c("long", "lat"), crs = 4326, agr = "constant")
 
 result <- ExtractDailyDAYMET(XYdata = pts_sf,
                              datesname = "dates",
-                             Metrics = c("prcp", "swe", "tmax", "tmin"))  
+                             Metrics = c("prcp", "swe", "tmax", "tmin"), 
+                             num_cores = 10)  
 
 ```
 

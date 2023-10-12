@@ -85,7 +85,6 @@ ExtractRAP <- function(XYdata,
   yrs <- unique(year_bio)
   
   
-  
   # identify cores (use 1 less than you have)
   no_cores <- ifelse(length(yrs) < maxcpus, length(yrs), maxcpus)
   # Setup cluster
