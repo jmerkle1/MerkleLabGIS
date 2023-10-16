@@ -135,7 +135,30 @@ result <- ExtractDailyDAYMET(XYdata = pts_sf,
                              num_cores = 10)  
 
 ```
+### Extract NDVI
+The Extract NDVI function processes data from the MODIS NDVI datasets to extract specific NDVI metrics for given geographic points and dates.To use this function, you need to provide the following inputs:
 
+1. **XYdata**: Spatial data representing the geographic points for which you want to extract NDVI metrics.
+2. **datesname**: Indicate the name of the column representing date as POSIXct.
+3. **NDVImetric**: Specify the metrics you are interested in ("MaxNDVIDay","MaxIRGday", "SpringStartDay", "SpringEndDay","IntegratedNDVI","MaxBrownDownDate", "NDVI_scaled","IRG_scaled","SE_springDLCfit", "SpringLength","sumIRG","SpringScale").
+4. **maxcpus**: Number of cores to use for parallel processing. 
+
+```
+#Sample data
+
+df <- data.frame(
+  longitude = c(-107.7219, -107.6194, -105.6952, -105.9229, -107.0843),
+  latitude = c(43.83566, 41.94561, 42.81093, 43.73319, 43.07281),
+  random_date = as.POSIXct(c("2006-01-14 17:16:11", "2016-07-21 08:12:33", "2008-08-02 21:28:18", 
+                             "2018-07-17 18:50:37", "2019-10-01 10:13:03"))
+)
+
+# Convert dataframe to sf object
+sf_obj <- st_as_sf(df, coords = c("longitude", "latitude"), crs = 4326)
+
+result <- ExtractNDVI(XYdata = sf_obj, NDVImetric = c( "MaxNDVIDay", "MaxBrownDownDate"), datesname = "random_date", maxcpus = 6)
+
+```
 
 ### Crop Rasters
 Crop a list of rasters to a study area from the Merkle Research Group database. Cropped rasters are saved to the local computer.
