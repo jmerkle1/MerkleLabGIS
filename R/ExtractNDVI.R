@@ -60,7 +60,8 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   XYdata$jul[XYdata$jul > 365] <- 365
   XYdata$unique <- 1:nrow(XYdata)
   u <- unique(XYdata$year)
- 
+  #u <- unique(XYdata$year[XYdata$year != 2023])
+
   
   vals_list <- list() # Empty list to store results for each metric
   sfInit(parallel=TRUE, cpus= maxcpus) 
@@ -232,15 +233,15 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   for(i in 1:length(NDVImetric)){
     metric = NDVImetric[i]
     if(i == 1){
-      XYdata <- merge(XYdata[,c("unique", datesname)],vals_list[[metric]], all.x=TRUE)
+      XYdata <- merge(XYdata, vals_list[[metric]], all.x=TRUE, by="unique")
     } else {
-      XYdata <- merge(XYdata,vals_list[[metric]][,c("unique", metric)], all.x=TRUE, by="unique")
+      XYdata <- merge(XYdata, vals_list[[metric]][,c("unique", metric)], all.x=TRUE, by="unique")
     }
   }
   
   XYdata <- XYdata[order(XYdata$unique),]
   # Reproject back to original data
   XYdata <- st_transform(XYdata, crs = original_crs)
-  
-  return(XYdata[,c("unique", datesname, NDVImetric)])
+  return(XYdata)
+  #return(XYdata[,c("unique", datesname, NDVImetric)])
 }
