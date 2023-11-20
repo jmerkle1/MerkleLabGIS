@@ -45,12 +45,12 @@ bucket <- function() {
   MerkleLabGIS$url <- MerkleLabGIS$urlmodified_url
   MerkleLabGIS <- MerkleLabGIS[, c("filename", "lastModified", "Category", "url")]
   
-  #Get SNODAS Data
+  #Get Daily SNODAS Data
   snodas<- httr::POST(
     "https://devise.uwyo.edu/Umbraco/api/SnodasApi/GetData",
     httr::content_type_json(),
     body = jsonlite::toJSON(
-      list(StartDate = jsonlite::unbox("2005-01-01"),
+      list(StartDate = jsonlite::unbox("2000-01-01"),
            EndDate = jsonlite::unbox(current_date),
            Metrics = c("SWE", "SnowDepth")),
       auto_unbox = FALSE
@@ -61,13 +61,33 @@ bucket <- function() {
   snodas$Category[snodas$metric == "SnowDepth"] <- "Snodas_Snowdepth"
   snodas$Category[snodas$metric == "SWE"] <- "Snodas_SWE"
   
+  #Get Annual SNODAS Data
+  snodasAnnual<- httr::POST(
+    "https://devise.uwyo.edu/Umbraco/api/SnodasApi/GetDerivedAnnualData",
+    httr::content_type_json(),
+    body = jsonlite::toJSON(
+      list(StartDate = jsonlite::unbox("2000-01-01"),
+           EndDate = jsonlite::unbox(current_date),
+           Metrics = c("MaxSnowDepth", "MaxSWE","MeanSnowDepth","MeanSWE","MedianSnowDepth","MedianSWE")),
+      auto_unbox = FALSE
+    )
+  ) %>%
+    content()
+  snodasAnnual <- do.call(rbind.data.frame, snodasAnnual)
+  snodasAnnual$Category[snodasAnnual$metric == "MaxSnowDepth"] <- "Snodas_MaxSnowDepth"
+  snodasAnnual$Category[snodasAnnual$metric == "MaxSWE"] <- "Snodas_MaxSWE"
+  snodasAnnual$Category[snodasAnnual$metric == "MeanSnowDepth"] <- "Snodas_MeanSnowDepth"
+  snodasAnnual$Category[snodasAnnual$metric == "MeanSWE"] <- "Snodas_MeanSWE"
+  snodasAnnual$Category[snodasAnnual$metric == "MedianSnowDepth"] <- "Snodas_MedianSnowDepth"
+  snodasAnnual$Category[snodasAnnual$metric == "MedianSWE"] <- "Snodas_MedianSWE"
   
-  #Get Daymet Data
+  
+  #Get Daily Daymet Data
   daymet<- httr::POST(
     "https://devise.uwyo.edu/Umbraco/api/DaymetApi/GetData",
     httr::content_type_json(),
     body = jsonlite::toJSON(
-      list(StartDate = jsonlite::unbox("2005-01-01"),
+      list(StartDate = jsonlite::unbox("2000-01-01"),
            EndDate = jsonlite::unbox(current_date),
            Metrics = c("prcp", "swe", "tmax")),
       auto_unbox = FALSE
@@ -80,8 +100,36 @@ bucket <- function() {
   daymet$Category[daymet$metric == "tmax"] <- "Daymet_TMAX"
   
   
-  MerkleLabGIS <- merge(merge(MerkleLabGIS, snodas,all = TRUE), daymet, all = TRUE)
+  #Get Annual Daymet Data
+  daymetAnnual<- httr::POST(
+    "https://devise.uwyo.edu/Umbraco/api/DaymetApi/GetDerivedAnnualData",
+    httr::content_type_json(),
+    body = jsonlite::toJSON(
+      list(StartDate = jsonlite::unbox("2000-01-01"),
+           EndDate = jsonlite::unbox(current_date),
+           Metrics = c("Maxprcp", "Maxswe", "Maxtmax", "Maxtmin", "Meanprcp","Meanswe", "Meantmax","Meantmin", "Medianprcp", "Medianswe", "Mediantmax", "Mediantmin", "Sumprcp")),
+      auto_unbox = FALSE
+    )
+  ) %>%
+    content()
+  daymetAnnual <- do.call(rbind.data.frame, daymetAnnual)
+  daymetAnnual$Category[daymetAnnual$metric == "Maxprcp"] <- "Daymet_Maxprcp"
+  daymetAnnual$Category[daymetAnnual$metric == "Maxswe"] <- "Daymet_Maxswe"
+  daymetAnnual$Category[daymetAnnual$metric == "Maxtmin"] <- "Daymet_Maxtmin"
+  daymetAnnual$Category[daymetAnnual$metric == "Maxtmax"] <- "Daymet_Maxtmax"
+  daymetAnnual$Category[daymetAnnual$metric == "Meanprcp"] <- "Daymet_Meanprcp"
+  daymetAnnual$Category[daymetAnnual$metric == "Meanswe"] <- "Daymet_Meanswe"
+  daymetAnnual$Category[daymetAnnual$metric == "Meantmax"] <- "Daymet_Meantmax"
+  daymetAnnual$Category[daymetAnnual$metric == "Meantmin"] <- "Daymet_Meantmin"
+  daymetAnnual$Category[daymetAnnual$metric == "Medianprcp"] <- "Daymet_Medianprcp"
+  daymetAnnual$Category[daymetAnnual$metric == "Medianswe"] <- "Daymet_Medianswe"
+  daymetAnnual$Category[daymetAnnual$metric == "Mediantmax"] <- "Daymet_Mediantmax"
+  daymetAnnual$Category[daymetAnnual$metric == "Mediantmin"] <- "Daymet_Mediantmin"
+  daymetAnnual$Category[daymetAnnual$metric == "Sumprcp"] <- "Daymet_Sumprcp"
+  
+  
+  
+  MerkleLabGIS <- merge(merge(merge(merge(MerkleLabGIS, snodas,all = TRUE), daymet, all = TRUE), snodasAnnual, all = TRUE), daymetAnnual, all = TRUE)
 
   return(MerkleLabGIS)
 }
-
