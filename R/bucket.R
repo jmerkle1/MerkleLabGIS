@@ -127,9 +127,29 @@ bucket <- function() {
   daymetAnnual$Category[daymetAnnual$metric == "Mediantmin"] <- "Daymet_Mediantmin"
   daymetAnnual$Category[daymetAnnual$metric == "Sumprcp"] <- "Daymet_Sumprcp"
   
+  #Get eMODIS data
+
+  eModis<- httr::POST(
+    "https://devise.uwyo.edu/umbraco/api/erosapi/GetDerivedAnnualData",
+    httr::content_type_json(),
+    body = jsonlite::toJSON(
+      list(StartDate = jsonlite::unbox("2005-01-01"),
+           EndDate = jsonlite::unbox(current_date),
+           Metrics = c("dur","eost","maxt","sost","tin")),
+      auto_unbox = FALSE
+    )
+  ) %>%
+    content()
+  
+  dat <- do.call(rbind.data.frame, eModis)
+  dat$Category[dat$metric == "dur"] <- "eMODIS_dur"
+  dat$Category[dat$metric == "eost"] <- "eMODIS_eost"
+  dat$Category[dat$metric == "maxt"] <- "eMODIS_maxt"
+  dat$Category[dat$metric == "sost"] <- "eMODIS_sost"
+  dat$Category[dat$metric == "tin"] <- "eMODIS_tin"
   
   
-  MerkleLabGIS <- merge(merge(merge(merge(MerkleLabGIS, snodas,all = TRUE), daymet, all = TRUE), snodasAnnual, all = TRUE), daymetAnnual, all = TRUE)
+  MerkleLabGIS <- merge(merge(merge(merge(merge(MerkleLabGIS, snodas,all = TRUE), daymet, all = TRUE), snodasAnnual, all = TRUE), daymetAnnual, all = TRUE), dat, all = TRUE)
 
   return(MerkleLabGIS)
 }
