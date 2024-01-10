@@ -148,8 +148,68 @@ bucket <- function() {
   dat$Category[dat$metric == "sost"] <- "eMODIS_sost"
   dat$Category[dat$metric == "tin"] <- "eMODIS_tin"
   
+
+  #Get Daily PRISM Data
+  prism_daily<- httr::POST(
+    "https://devise.uwyo.edu/Umbraco/api/PrismApi/GetData",
+    httr::content_type_json(),
+    body = jsonlite::toJSON(
+      list(StartDate = jsonlite::unbox("2000-01-01"),
+           EndDate = jsonlite::unbox(current_date),
+           Metrics = c("ppt", "tdmean", "tmax","tmean","tmin","vpdmax","vpdmin")),
+      auto_unbox = FALSE
+    )
+  ) %>%
+    content()
+  prism_daily <- do.call(rbind.data.frame, prism_daily)
+  prism_daily$Category[prism_daily$metric == "ppt"] <- "PRISM_PPT"
+  prism_daily$Category[prism_daily$metric == "tdmean"] <- "PRSIM_TDMEAN"
+  prism_daily$Category[prism_daily$metric == "tmax"] <- "PRISM_TMAX"
+  prism_daily$Category[prism_daily$metric == "tmean"] <- "PRISM_TMEAN"
+  prism_daily$Category[prism_daily$metric == "tmin"] <- "PRISM_TMIN"
+  prism_daily$Category[prism_daily$metric == "vpdmax"] <- "PRISM_VPDMAX"
+  prism_daily$Category[prism_daily$metric == "vpdmin"] <- "PRISM_VPDMIN"
   
-  MerkleLabGIS <- merge(merge(merge(merge(merge(MerkleLabGIS, snodas,all = TRUE), daymet, all = TRUE), snodasAnnual, all = TRUE), daymetAnnual, all = TRUE), dat, all = TRUE)
+  
+  
+  #Get Annual PRISM Data
+  prism_annual<- httr::POST(
+    "https://devise.uwyo.edu/Umbraco/api/PrismApi/GetDerivedAnnualData",
+    httr::content_type_json(),
+    body = jsonlite::toJSON(
+      list(StartDate = jsonlite::unbox("2000-01-01"),
+           EndDate = jsonlite::unbox(current_date),
+           Metrics = c("Maxppt", "Maxtdmean", "Maxtmax", "Maxtmean", "Maxtmin","Maxvpdmax", "Maxvpdmin","Meanppt", 
+                       "Meantmax", "Meantmean", "Meantmin", "Meanvpdmax", "Meanvpdmin","Medianppt","Mediantdmean","Mediantmax"
+                       ,"Mediantmean","Mediantmin","Medianvpdmax","Medianvpdmin","Sumppt")),
+      auto_unbox = FALSE
+    )
+  ) %>%
+    content()
+  prism_annual <- do.call(rbind.data.frame, prism_annual)
+  prism_annual$Category[prism_annual$metric == "Maxppt"] <- "PRISM_Maxppt"
+  prism_annual$Category[prism_annual$metric == "Maxtdmean"] <- "PRISM_Maxtdmean"
+  prism_annual$Category[prism_annual$metric == "Maxtmax"] <- "PRISM_Maxtmax"
+  prism_annual$Category[prism_annual$metric == "Maxtmean"] <- "PRISM_Maxtmean"
+  prism_annual$Category[prism_annual$metric == "Maxtmin"] <- "PRISM_Maxtmin"
+  prism_annual$Category[prism_annual$metric == "Maxvpdmax"] <- "PRISM_Maxvpdmax"
+  prism_annual$Category[prism_annual$metric == "Maxvpdmin"] <- "PRISM_Maxvpdmin"
+  prism_annual$Category[prism_annual$metric == "Meanppt"] <- "PRISM_Meanppt"
+  prism_annual$Category[prism_annual$metric == "Meantmax"] <- "PRISM_Meantmax"
+  prism_annual$Category[prism_annual$metric == "Meantmean"] <- "PRISM_Meantmean"
+  prism_annual$Category[prism_annual$metric == "Meantmin"] <- "PRISM_Meantmin"
+  prism_annual$Category[prism_annual$metric == "Meanvpdmax"] <- "PRISM_Meanvpdmax"
+  prism_annual$Category[prism_annual$metric == "Medianppt"] <- "PRISM_Medianppt"
+  prism_annual$Category[prism_annual$metric == "Mediantdmean"] <- "PRISM_Mediantdmean"
+  prism_annual$Category[prism_annual$metric == "Mediantmax"] <- "PRISM_Mediantmax"
+  prism_annual$Category[prism_annual$metric == "Mediantmean"] <- "PRISM_Mediantmean"
+  prism_annual$Category[prism_annual$metric == "Mediantmin"] <- "PRISM_Mediantmin"
+  prism_annual$Category[prism_annual$metric == "Medianvpdmax"] <- "PRISM_Medianvpdmax"
+  prism_annual$Category[prism_annual$metric == "Medianvpdmin"] <- "PRISM_Medianvpdmin"
+  prism_annual$Category[prism_annual$metric == "Sumppt"] <- "PRISM_Sumppt"
+  
+  
+  MerkleLabGIS <- merge(merge(merge(merge(merge(merge(merge(MerkleLabGIS, snodas,all = TRUE), daymet, all = TRUE), snodasAnnual, all = TRUE), daymetAnnual, all = TRUE), dat, all = TRUE), prism_annual, all = TRUE), prism_daily, all = TRUE)
 
   return(MerkleLabGIS)
 }
