@@ -14,7 +14,6 @@
 #' 
 #' @import sf
 #' @import terra
-#' @import rgdal
 #' @import snowfall
 #' @export
 #' 
@@ -27,7 +26,6 @@
 ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   
   # Import necessary libraries
-  require("rgdal")
   require("snowfall")
   require("sf")
   require("terra")
@@ -49,6 +47,7 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   
   dt <- bucket()
   MODIS_NDVI <- dt[dt$Category == "MODIS_NDVI",]
+  MODIS_NDVI <- MODIS_NDVI[complete.cases(MODIS_NDVI$url), ]
   drs <- MODIS_NDVI$filename
   xyCRS <- 5072
   
