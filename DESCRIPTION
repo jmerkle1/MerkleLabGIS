@@ -2,7 +2,7 @@ Package: MerkleLabGIS
 Type: Package
 Version: 0.1.0
 Author: Jessie Shapiro & Jerod Merkle
-Maintainer: The package maintainer <yourself@somewhere.net>
+Maintainer: The package maintainer <jessie.shapiro@uwyo.edu>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
 License: What license is it under?
@@ -19,6 +19,5 @@ Imports:
   dplyr (>= 1.0.2),
   terra (>= 1.5-20),
   sf (>= 1.0-7),
-  sp (>= 1.4-4),
   tidyverse (>= 1.3.0),
   snowfall (>= 1.84-6.2)
