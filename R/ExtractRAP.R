@@ -18,7 +18,6 @@
 #' @return
 #' @import sf
 #' @import terra
-#' @import sp
 #' @import dplyr
 #' @import MerkleLabGIS
 #' @export
