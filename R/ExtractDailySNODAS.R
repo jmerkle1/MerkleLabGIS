@@ -25,7 +25,6 @@
 #' 
 #' 
 
-
 ExtractDailySNODAS <- function(XYdata = data,
                                datesname = "date",
                                Metrics = c("SWE", "SnowDepth"),
@@ -89,17 +88,17 @@ ExtractDailySNODAS <- function(XYdata = data,
   # Initialize an empty list
   dat_snow_list <- list()  
   
-  clust <- makeCluster(num_cores)
+  clust <- parallel::makeCluster(num_cores)
   
   
-  clusterEvalQ(clust, library(sf))
+  parallel::clusterEvalQ(clust, library(sf))
   
   # Export the objects you need for your calculations from your environment to each node's environment
-  clusterExport(clust, varlist = c("XYtemp", "unique_dates", "Metrics", "df", "dat_snow_list"), envir = environment())
+  parallel::clusterExport(clust, varlist = c("XYtemp", "unique_dates", "Metrics", "df", "dat_snow_list"), envir = environment())
   # Parallelize the extraction process
   
   system.time({
-    dat_snow_list <- clusterApplyLB(clust, 1:length(unique_dates), function(i) {
+    dat_snow_list <- parallel::clusterApplyLB(clust, 1:length(unique_dates), function(i) {
       
       row <- XYtemp[XYtemp$formatted_dates == unique_dates[i], ]
       date_str <- row$formatted_dates[1]
