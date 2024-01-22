@@ -87,9 +87,9 @@ ExtractRAP <- function(XYdata,
   # identify cores (use 1 less than you have)
   no_cores <- ifelse(length(yrs) < maxcpus, length(yrs), maxcpus)
   # Setup cluster
-  clust <- makeCluster(no_cores) 
+  clust <- parallel::makeCluster(no_cores) 
   # export the objects you need for your calculations from your environment to each node's environment
-  clusterExport(clust, varlist=c("XYdata","year_bio","yrs","drs","RAPmetric","RAP"),envir=environment())
+  parallel::clusterExport(clust, varlist=c("XYdata","year_bio","yrs","drs","RAPmetric","RAP"),envir=environment())
   rap_list <- list()  
   
   #Save original crs
@@ -99,7 +99,7 @@ ExtractRAP <- function(XYdata,
   XYdata <- st_transform(XYdata, crs = 4326)
   XYdata <- XYdata[order(XYdata[[datesname]]), ]
   
-  rap_list <- do.call(rbind, clusterApplyLB(clust, 1:length(yrs), function(i){
+  rap_list <- do.call(rbind, parallel::clusterApplyLB(clust, 1:length(yrs), function(i){
     library(sf)
     library(terra)
     
@@ -139,7 +139,7 @@ ExtractRAP <- function(XYdata,
   }))
   
   
-  stopCluster(clust)  
+  parallel::stopCluster(clust)  
   
   # Bind the extracted data to the original XYdata
   XYdata <- cbind(XYdata, rap_list)
