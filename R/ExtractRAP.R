@@ -113,7 +113,7 @@ ExtractRAP <- function(XYdata,
     # loop over the metrics for this year
     for(e in 1:length(RAPmetric)) {
 
-      url <- RAP$url[RAP$filename == paste0("RAP_", yrs[i], "_", RAPmetric[e], ".tif")]
+    url <- RAP$url[which(RAP$filename == paste0("RAP_", yrs[i], "_", RAPmetric[e], ".tif"))]
       
       # Ensure URL is valid, if not assign NA and continue
       if(length(url) == 0 || url == "") {
