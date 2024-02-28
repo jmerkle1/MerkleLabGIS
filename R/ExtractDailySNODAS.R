@@ -95,7 +95,7 @@ ExtractDailySNODAS <- function(XYdata = data,
   clust <- parallel::makeCluster(num_cores)
   
   
-  parallel::clusterEvalQ(clust, library(sf), library(terra), library(terra))
+  parallel::clusterEvalQ(clust, library(sf), library(terra))
   
   # Export the objects you need for your calculations from your environment to each node's environment
   parallel::clusterExport(clust, varlist = c("XYtemp", "unique_dates", "Metrics", "df", "dat_snow_list"), envir = environment())
