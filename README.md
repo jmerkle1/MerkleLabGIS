@@ -140,7 +140,8 @@ The Extract NDVI function processes data from the MODIS NDVI datasets to extract
 
 1. **XYdata**: Spatial data representing the geographic points for which you want to extract NDVI metrics.
 2. **datesname**: Indicate the name of the column representing date as POSIXct.
-3. **NDVImetric**: Specify the metrics you are interested in ("MaxNDVIDay","MaxIRGday", "SpringStartDay", "SpringEndDay","IntegratedNDVI","MaxBrownDownDate", "NDVI_scaled","IRG_scaled","SE_springDLCfit", "SpringLength","sumIRG","SpringScale").
+3. **NDVImetric**: Specify the metrics you are interested in ("MaxNDVIDay","MaxIRGday", "SpringStartDay", "SpringEndDay","MaxBrownDownDay",
+                           "NDVI_scaled","IRG_scaled","SpringSE", "SpringLength","sumIRG","SpringScale").
 4. **maxcpus**: Number of cores to use for parallel processing. 
 
 ```
@@ -156,7 +157,7 @@ df <- data.frame(
 # Convert dataframe to sf object
 sf_obj <- st_as_sf(df, coords = c("longitude", "latitude"), crs = 4326)
 
-result <- ExtractNDVI(XYdata = sf_obj, NDVImetric = c( "MaxNDVIDay", "MaxBrownDownDate"), datesname = "random_date", maxcpus = 6)
+result <- ExtractNDVI(XYdata = sf_obj, NDVImetric = c( "MaxNDVIDay", "MaxBrownDownDay"), datesname = "random_date", maxcpus = 6)
 
 ```
 
