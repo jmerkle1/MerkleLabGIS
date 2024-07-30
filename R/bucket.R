@@ -45,11 +45,11 @@ bucket <- function() {
   MerkleLabGIS$url <- MerkleLabGIS$urlmodified_url
   MerkleLabGIS <- MerkleLabGIS[, c("filename", "lastModified", "Category", "url")]
 
-  metadata <- GET("https://wildlifemovetools.org/api/layersmetadata")
-  metadata <- fromJSON(rawToChar(metadata$content))
-  metadata <- metadata[, !names(metadata) %in% c("oid", "category")]
+  # metadata <- GET("https://wildlifemovetools.org/api/layersmetadata")
+  # metadata <- fromJSON(rawToChar(metadata$content))
+  # metadata <- metadata[, !names(metadata) %in% c("oid", "category")]
   
-  MerkleLabGIS <- inner_join(MerkleLabGIS, metadata, by = c("filename", "url"))
+  # MerkleLabGIS <- inner_join(MerkleLabGIS, metadata, by = c("filename", "url"))
   
   #Get Daily SNODAS Data
   snodas<- httr::POST(
