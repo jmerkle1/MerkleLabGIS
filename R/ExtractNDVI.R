@@ -44,7 +44,7 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   }
   
   dt <- bucket()
-  MODIS_NDVI <- dt[dt$Category == "MODIS_NDVI",]
+  MODIS_NDVI <- dt[dt$category == "MODIS_NDVI",]
   MODIS_NDVI <- MODIS_NDVI[complete.cases(MODIS_NDVI$url), ]
   drs <- MODIS_NDVI$filename
   
