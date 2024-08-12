@@ -54,7 +54,7 @@ ExtractRAP <- function(XYdata,
   
   #Fetch RAP data from pathfinder
   dt <- bucket()
-  RAP <- dt[dt$Category == "Landcover_RAP",]
+  RAP <- dt[dt$category == "Landcover_RAP",]
   drs <- RAP$filename
   
   if(inherits(XYdata, "sf") == FALSE) stop("XYdata is not an sf object")
