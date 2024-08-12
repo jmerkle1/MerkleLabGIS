@@ -31,7 +31,7 @@ DownloadRAP <- function(RAPmetric = c("Biomass_AnnualForbsGrasses", "Cover_BareG
   
   # Fetch RAP data from pathfinder
   dt <- bucket()
-  RAP <- dt[dt$Category == "Landcover_RAP",]
+  RAP <- dt[dt$category == "Landcover_RAP",]
   
   if(all(c("terra") %in% installed.packages()[,1])==FALSE)
     stop("You must install the terra package")
