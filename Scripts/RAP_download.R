@@ -190,8 +190,18 @@ for (year in names(labeled_rasters_list)) {
     output_cog <- paste0("G:/Shared drives/wy-coop-shapiro/gis-organization/data/COG/test/", "RAP","_",year,"_", label, ".tif")
     
     # Convert to COG using gdal_translate
-    gdal_translate(temp_tif, output_cog, of = "COG")
-    
+        gdal_translate(
+      src_dataset = temp_tif,
+      dst_dataset = output_cog,
+      of = "COG",
+      co = c(
+        "COMPRESS=LZW",
+        "MAX_Z_ERROR=0",
+        "BLOCKSIZE=128",
+        "BIGTIFF=YES",
+        "COPY_SRC_OVERVIEWS=YES"
+      )
+    )
     #Delete the temporary file after conversion
     file.remove(temp_tif)
   }
