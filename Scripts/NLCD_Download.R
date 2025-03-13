@@ -120,7 +120,18 @@ writeRaster(r, filename = "C:/Users/cowboy/Downloads/nlcd_tcc_CONUS_2020_v2021-4
 input_tif <- "C:/Users/cowboy/Downloads/nlcd_tcc_CONUS_2020_v2021-4/nlcd_2021_treecanopy.tif"
 output_cog <- "C:/Users/cowboy/Documents/gis-viewer/data/NLCD_2021_TreeCanopy.tif"
 
-gdal_translate(input_tif, output_cog, of = "COG")
+    gdal_translate(
+      src_dataset = input_tif,
+      dst_dataset = output_cog,
+      of = "COG",
+      co = c(
+        "COMPRESS=LZW",
+        "MAX_Z_ERROR=0",
+        "BLOCKSIZE=128",
+        "BIGTIFF=YES",
+        "COPY_SRC_OVERVIEWS=YES"
+      )
+    )
 
 
 #Another way to write it out
