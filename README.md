@@ -1,7 +1,7 @@
 # MerkleLabGIS
 
 ## About
-The Merkle Research Group provides a code repository dedicated to extracting and managing GIS data for Wyoming and the Greater Yellowstone Ecosystem (GYE). We utilize a cloud storage solution to make geospatial data, which is freely available, easily accessible. You can access these data either through our code or by using our [data viewer](https://pathfinder.arcc.uwyo.edu/devise/MerkleLabGIS/WebApp/map.html).
+The Merkle Research Group provides a code repository dedicated to extracting and managing GIS data for Wyoming and the Greater Yellowstone Ecosystem (GYE). We utilize a cloud storage solution to make geospatial data, which is freely available, easily accessible. You can access these data either through our code or by using our [data viewer](https://wildlifemovetools.org/gis).
 ### Pathfinder
 Pathfinder is our chosen storage solution, facilitating a cloud-like presence powered by ARCC. At its core, it provides services such as onsite backups, data sharing, and collaboration. Pathfinder employs the Simple Storage Service (S3) protocol, initially devised by Amazon. The object storage in S3 operates via a service known as Ceph, a feature of Red Hat Enterprise Linux.
 
