@@ -13,61 +13,64 @@
 
 
 
-DownloadDAYMET<- function(params = c("prcp", "swe", "tmax", "tmin"), startDate, endDate, outDir){
-  if(!exists("startDate")){
-    stop("startDate must be a charater string of a date (e.g. '2020-06-30')")
-  } else{
-    if(any(is.null(startDate), is.na(startDate))){
-      stop("startDate must be a charater string of a date (e.g. '2020-06-30')")
-    }
-  }
-  if(!is.character(startDate)) stop("startDate must be a charater string of a date (e.g. '2020-06-30')")
-  if(!lubridate::is.Date(as.Date(startDate))) stop("startDate must be a charater string of a date (e.g. '2020-06-30')")
+DownloadDAYMET<- function(params = c( "prcp"), startDate, endDate, outDir) {
+  library(terra)
+  library(lubridate)
   
-  # End date
-  if(!is.null(endDate)){
-    if(!is.character(endDate)) stop("endDate must be a charater string of a date (e.g. '2020-06-30')")
-    if(inherits(try(lubridate::is.Date(as.Date(endDate)), silent = TRUE), "try-error")) stop("endDate must be a charater string of a date (e.g. '2020-06-30')")
-  }
-
-  # output directory
-  if(!is.null(outDir)){
-    if(!is.character(outDir)) stop("outDir must be a character string. Preferably of a directory that exists within your file system.")
-    if(!dir.exists(outDir)) stop("You have specified a directory that does not currently exist within your file system!")
-  }
-
-  # params
-  if(!all(params %in% c("prcp", "swe", "tmax", "tmin"))) {
-    stop("params must contain only the following possible input as a character vector: c(\"prcp\", \"swe\", \"tmax\", \"tmin\")")
-  }
-
-  dat<- httr::POST(
-    "https://devise.uwyo.edu/umbraco/api/daymetapi/GetData",
-    httr::content_type_json(),
-    body = jsonlite::toJSON(
-      list(StartDate = jsonlite::unbox(startDate),
-           EndDate = jsonlite::unbox(endDate),
-           Metrics = params),
-      auto_unbox = FALSE
-    )
-  )
-
-  dat<- httr::content(dat)
-
-  # Extract the response
-  dat <- do.call(rbind.data.frame, dat)
+  # validate params
+  allowed_metrics <- c("prcp", "swe", "tmax", "tmin")
   
-  # Download the files from Repository
-  for(i in 1:nrow(dat)){
-    # Create subdirectory for each metric if it doesn't exist
-    subDir <- file.path(outDir, dat$metric[i])
-    if (!dir.exists(subDir)) {
-      dir.create(subDir)
+  params <- tolower(params)
+  if (!all(params %in% allowed_metrics)) {
+    stop(paste0("params must be one or more of: ", paste(allowed_metrics, collapse = ", ")))
+  }
+  
+  # Validate date inputs
+  if (!is.character(startDate) || is.na(startDate)) stop("startDate must be a character string like '2022-01-10'")
+  if (!is.null(endDate) && (!is.character(endDate) || is.na(endDate))) stop("endDate must be a character string like '2022-01-10'")
+  if (!is.null(outDir) && (!is.character(outDir) || !dir.exists(outDir))) stop("outDir must be a valid existing directory")
+  
+  # Create date range
+  start <- as.Date(startDate)
+  end <- as.Date(endDate)
+  all_dates <- seq(start, end, by = "1 day")
+  all_years <- unique(year(all_dates))
+  
+  for (param in params) {
+    for (yr in all_years) {
+      # Filter dates for this year only
+      year_dates <- all_dates[year(all_dates) == yr]
+      band_indices <- yday(year_dates)
+      
+      # Construct COG URL and /vsicurl/ path
+      url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/daily/cog/daymet/%s/daymet_daily_%s_%d.tif",
+                     param, param, yr)
+      vsicurl_path <- paste0("/vsicurl/", url)
+      
+      message(sprintf("Accessing remote raster stack for %s %d ...", param, yr))
+      
+      tryCatch({
+        rast_all <- rast(vsicurl_path)
+        subset_rast <- rast_all[[band_indices]]
+        
+        # Check: if subset is empty (e.g., failed band read), skip saving
+        if (nlyr(subset_rast) == 0) {
+          warning(sprintf("No valid bands found for %s %d. Skipping save.", param, yr))
+          next
+        }
+        
+        # Save output
+        subDir <- file.path(outDir, param)
+        if (!dir.exists(subDir)) dir.create(subDir, recursive = TRUE)
+        
+        output_name <- sprintf("daymet_%s_%s_to_%s.tif", param, min(year_dates), max(year_dates))
+        output_path <- file.path(subDir, output_name)
+        
+        writeRaster(subset_rast, output_path, overwrite = TRUE)
+        message(sprintf("Saved to %s", output_path))
+      }, error = function(e) {
+        message(sprintf("Failed to process %s for %d: %s", param, yr, e$message))
+      })
     }
-    
-    # Set the destination file path within the metric's subdirectory
-    destFilePath <- file.path(subDir, dat$filename[i])
-    
-    try(utils::download.file(url = dat$url[i], destfile = destFilePath, quiet = TRUE, mode = "wb"), silent = TRUE)
   }
 }
