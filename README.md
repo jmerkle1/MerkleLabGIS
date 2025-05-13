@@ -54,7 +54,7 @@ to extract specific annual metrics for given geographic points and dates.To use 
 1. **point_data**: Spatial data representing the geographic points for which you want to extract daily SNODAS metrics.
 2. **start_date**: This is the beginning of the date range from which you want to start extracting the metric.
 3. **end_date**: This indicates the end of the date range up to which you want to extract the metric.
-4. **metric_name**: Specify the metrics you are interested in (e.g., MaxSnowDepth, MaxSWE, MeanSnowDepth).
+4. **metric_name**: Specify the metrics you are interested in (e.g., "snowdepth", "snowdepth-accum", "swe", "snowdays", "snowmelt").
 
 
 ```
@@ -63,7 +63,7 @@ points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.5473
   sf::st_as_sf(coords = c("x", "y"), crs = 4326)
   
 MaxSnowDepth <- ExtractAnnualSNODAS(point_data = points, start_date = "2005-01-01", 
-                        end_date = "2010-01-01", metric_name = "MaxSnowDepth")
+                        end_date = "2010-01-01", metric_name = "snowdepth")
 ```
 
 ### Extract Daily SNODAS
@@ -71,7 +71,7 @@ The Extract Daily SNODAS function processes data from SNODAS and extracts specif
 
 1. **XYdata**: Spatial data representing the geographic points for which you want to extract daily SNODAS metrics.
 3. **datesname**: Indicate the name of the column representing date as POSIXct.
-3. **Metrics**: Specify the metrics you are interested in (SWE or SnowDepth) .
+3. **Metrics**: Specify the metrics you are interested in ("snowdepth", "snowdepth-accum", "swe", "snowdays", "snowmelt") .
 4. **num_cores**: Number of cores to use for parallel processing. If no value is defined, the function will auto detect how many cores are available on your machine. 
 
 ```
@@ -99,7 +99,7 @@ The Extract Annual DAYMET function processes data from DAYMET to extract specifi
 1. **point_data**: Spatial data representing the geographic points for which you want to extract daily DAYMET metrics.
 2. **start_date**: This is the beginning of the date range from which you want to start extracting the metric.
 3. **end_date**: This indicates the end of the date range up to which you want to extract the metric.
-4. **metric_name**: Specify the metrics you are interested in ("Maxprcp","Maxswe","Maxtmax","Maxtmin","Meanprcp","Meanswe","Meantmax","Meantmin","Medianprcp","Medianswe","Mediantmax","Mediantmin").
+4. **metric_name**: Specify the metrics you are interested in ("prcp", "swe", "tmax", "tmin").
 
 ```
 #Sample data
@@ -115,7 +115,7 @@ The Extract Daily DAYMET function processes data from DAYMET and extracts specif
 
 1. **XYdata**: Spatial data representing the geographic points for which you want to extract daily DAYMET metrics.
 2. **datesname**: Indicate the name of the column representing date as POSIXct.
-3. **Metrics**: Specify the metrics you are interested in (prcp, swe, tmax or tmin) .
+3. **Metrics**: Specify the metrics you are interested in ("prcp", "swe", "tmax", "tmin") .
 4. **num_cores**: Number of cores to use for parallel processing. If no value is defined, the function will auto detect how many cores are available on your machine. 
 
 ```
