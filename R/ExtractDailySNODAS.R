@@ -32,9 +32,9 @@ ExtractDailySNODAS <- function(XYdata, datesname = "date", Metrics = c("swe", "s
   
   allowed_metrics <- c("swe", "snowdepth", "snowdepth-accum", "snowmelt", "snowdays")
   
-  params <- tolower(params)
-  if (!all(params %in% allowed_metrics)) {
-    stop(paste0("params must be one or more of: ", paste(allowed_metrics, collapse = ", ")))
+  Metrics <- tolower(Metrics)
+  if (!all(Metrics %in% allowed_metrics)) {
+    stop(paste0("Metrics must be one or more of: ", paste(allowed_metrics, collapse = ", ")))
   }
   
   require("sf")
@@ -43,6 +43,7 @@ ExtractDailySNODAS <- function(XYdata, datesname = "date", Metrics = c("swe", "s
   require("httr")
   require("jsonlite")
   require("dplyr")
+  require("lubridate")
   
   #Check cores
   if(is.null(num_cores)){
