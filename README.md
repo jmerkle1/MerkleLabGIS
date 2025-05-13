@@ -8,12 +8,20 @@ Pathfinder is our chosen storage solution, facilitating a cloud-like presence po
 ### Cloud Optimized GeoTiffs
 COGs are geospatial raster files tailored for cloud environments. Their design ensures efficient access and storage, allowing users to fetch specific portions of raster data without the need to download the entire file.
 
+As of the latest update, WyGISC now stores all SNODAS, PRISM, DAYMET, and RSPM datasets as multi-band raster stacks. Instead of having separate .tif files for each day, year, or month, a single COG now contains multiple temporal layers as bands. Users must specify the appropriate band index when accessing data for a specific time period.
+
 For those interested in reading COGs in R via the terra package, the code snippet below will prove helpful. By prefixing the URL with /vsicurl/, GDAL interprets the remote file as a local one. This means you can read and process the data without downloading it explicitly:
 ```
- library(terra)
-                #Change to the raster url you want to read in. 
-                cog <- rast("/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/MerkleLabGIS/Landcover_NLCD/NLCD_2008_Landcover.tif") 
-                plot(cog)
+library(terra)
+#Change to the raster url you want to read in. 
+cog <- rast("/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/MerkleLabGIS/Landcover_NLCD/NLCD_2008_Landcover.tif") 
+plot(cog)
+```
+To extract a specific year or day from a multi-band COG, you can use band indexing:
+
+```
+cog <- rast("/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif")
+year_2004 <- cog[[1]]
 ```
 ## Functions
 To maximize utility, we offer multiple ways to interact with our raster and vector data. This repository houses several extraction functions designed to streamline the use of our GIS data.
