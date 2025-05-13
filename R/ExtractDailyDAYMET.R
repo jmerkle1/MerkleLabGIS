@@ -26,113 +26,80 @@
 #' 
 
 
-ExtractDailyDAYMET <- function(XYdata = data,
-                               datesname = "date",
-                               Metrics = c("prcp", "swe", "tmax", "tmin"),
-                               num_cores = NULL) {
-  
+ExtractDailyDAYMET <- function(XYdata, datesname = "date", Metrics = "prcp",num_cores = NULL) {
   if (!inherits(XYdata, "sf"))
-    stop("XYdata is not an sf object")
+    stop("XYdata must be an sf object")
+  
+  allowed_metrics <- c("prcp", "swe", "tmax", "tmin")
+  
+  Metrics <- tolower(Metrics)
+  if (!all(Metrics %in% allowed_metrics)) {
+    stop(paste0("Metrics must be one or more of: ", paste(allowed_metrics, collapse = ", ")))
+  }
+  
   
   require("sf")
   require("parallel")
   require("terra")
+  require("httr")
+  require("jsonlite")
+  require("dplyr")
   
   #Check cores
   if(is.null(num_cores)){
     num_cores <- detectCores()-1
   }else{
     num_cores <- num_cores
-  }
-  
-  #Check date column
+  }  
   dates <- XYdata[[datesname]]
+  if (!inherits(dates, "POSIXct")) stop("Your dates column is not POSIXct")
+  if (any(is.na(dates))) stop("NA values found in date column")
   
-  if (!inherits(dates, "POSIXct"))
-    stop("Your datesname column is not POSIXct")
-  if (any(is.na(dates)))
-    stop("You have NAs in your datesname column")
+  Metrics <- tolower(Metrics)
   
-  rm(dates)
+  XYdata$formatted_dates <- format(dates, "%Y-%m-%d")
+  XYdata$year <- year(dates)
+  XYdata$doy <- yday(dates)
   
-  XYdata$formatted_dates <- format(XYdata[[datesname]], "%Y-%m-%d")
-  
-  
-  # Determine the start and end dates for the SNODAS api
-  start_date <- min(XYdata$formatted_dates)
-  end_date <- max(XYdata$formatted_dates)
-  
-  dat <- httr::POST("https://devise.uwyo.edu/Umbraco/api/DaymetApi/GetData",
-                    httr::content_type_json(),
-                    body = jsonlite::toJSON(list(StartDate = jsonlite::unbox(start_date),
-                                                 EndDate = jsonlite::unbox(end_date),
-                                                 Metrics = Metrics),
-                                            auto_unbox = FALSE)
-  ) %>% httr::content()
-  
-  df <- data.frame(t(sapply(dat, c)))
-  df$sampDate <- as.POSIXct(unlist(df$sampDate))
-  dates <- as.POSIXct(df$sampDate)
-  
-  #Save original crs
   original_crs <- st_crs(XYdata)
-  
-  #Transform for extraction
-  XYdata <- st_transform(XYdata, crs = 5072)
-  
-  XYdata <- XYdata[order(XYdata$date), ]
-  
-  XYtemp <- XYdata[,c("formatted_dates","geometry")]
-  
-  unique_dates <- unique(XYtemp$formatted_dates)
-  
-  # Initialize an empty list
-  dat_daymet_list <- list()  
+  XYdata <- st_transform(XYdata, 5072)
   
   clust <- makeCluster(num_cores)
+  clusterEvalQ(clust, {
+    library(terra)
+    library(sf)
+  })
+  clusterExport(clust, varlist = c("XYdata", "Metrics"), envir = environment())
   
-  
-  clusterEvalQ(clust, library(sf))
-  
-  # Export the objects you need for your calculations from your environment to each node's environment
-  clusterExport(clust, varlist = c("XYtemp", "unique_dates", "Metrics", "df", "dat_daymet_list"), envir = environment())
-  # Parallelize the extraction process
-  
-  system.time({
-    dat_daymet_list <- clusterApplyLB(clust, 1:length(unique_dates), function(i) {
+  result_list <- clusterApplyLB(clust, 1:nrow(XYdata), function(i) {
+    row <- XYdata[i, ]
+    values <- sapply(Metrics, function(metric) {
+      yr <- row$year
+      band <- row$doy
       
-      row <- XYtemp[XYtemp$formatted_dates == unique_dates[i], ]
-      date_str <- row$formatted_dates[1]
+      url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/daily/cog/daymet/%s/daymet_daily_%s_%d.tif",
+                     metric, metric, yr)
+      vsicurl_path <- paste0("/vsicurl/", url)
       
-      toreturn <- do.call(cbind, lapply(Metrics, function(z) {
-        # Filter url by Metric and date
-        url_for_date <- df$url[df$sampDate == date_str & df$metric == z]
-        
-        if (length(url_for_date) == 0) {
-          return(rep(NA, nrow(row)))  # No raster available for this date and metric
-        } else {
-          # Extract raster
-          r <- terra::rast(as.character(url_for_date))
-          return(terra::extract(r, row)[, 2])  # Extract second value from the raster
-        }
-      }))
-      colnames(toreturn) <- Metrics  
-      return(toreturn)
-    })
+      tryCatch({
+        r <- terra::rast(vsicurl_path)
+        v <- terra::extract(r[[band]], row)
+        return(v[1, 2])  
+      }, error = function(e) {
+        return(NA)
+      })
+    }, simplify = FALSE)
+    
+    return(as.data.frame(values))
   })
   
-  # Stop the cluster
   stopCluster(clust)
   
-  # Combine extracted data from the list into a data frame
-  df_list <- lapply(dat_daymet_list, as.data.frame)
-  dat_daymet_df <- do.call(rbind, df_list)
+  result_df <- do.call(rbind, result_list)
+  colnames(result_df) <- Metrics
   
-  # Bind the extracted data to the original XYdata
-  XYdata <- cbind(XYdata, dat_daymet_df)
-  
-  # Reproject back to original data
+  XYdata <- cbind(XYdata, result_df)
   XYdata <- st_transform(XYdata, crs = original_crs)
-  
   return(XYdata)
 }
+
