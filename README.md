@@ -87,7 +87,7 @@ pts_sf <- st_as_sf(pts, coords = c("long", "lat"), crs = 4326, agr = "constant")
 
 result <- ExtractDailySNODAS(XYdata = pts_sf,
                              datesname = "dates",
-                             Metrics = c("SWE", "SnowDepth"), 
+                             Metrics = c("snowdepth"), 
                              num_cores = 10)  
 
 ```
@@ -107,7 +107,7 @@ points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.5473
   sf::st_as_sf(coords = c("x", "y"), crs = 4326)
   
 maxprcp<- ExtractDAYMET(point_data= points, start_date = "2005-01-01", 
-                        end_date = "2010-01-01", metric_name = "Maxprcp")
+                        end_date = "2010-01-01", metric_name = "prcp")
 ```
 
 ### Extract Daily DAYMET
