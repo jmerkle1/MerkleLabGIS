@@ -44,7 +44,7 @@ ExtractDailyDAYMET <- function(XYdata, datesname = "date", Metrics = "prcp",num_
   require("httr")
   require("jsonlite")
   require("dplyr")
-  
+  require("lubridate")
   #Check cores
   if(is.null(num_cores)){
     num_cores <- detectCores()-1
