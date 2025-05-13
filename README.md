@@ -170,7 +170,12 @@ result <- ExtractNDVI(XYdata = sf_obj, NDVImetric = c( "MaxNDVIDay", "MaxBrownDo
 ```
 
 ### Crop Rasters
-Crop a list of rasters to a study area from the Merkle Research Group database. Cropped rasters are saved to the local computer.
+Crop a list of rasters to a study area from the Merkle Research Group database. Cropped rasters are saved to the local computer. To use this function, you need to provide the following inputs:
+
+1. **cog_urls**: A vector of raster URLs. These URLS should point directly to the geotiff files that you intend to crop from the Merkle Database.
+2. **polygon_sf**: An sf polygon object.
+3. **output_folder**: Output directory path of the cropped rasters.
+4. **writeData**: TRUE/FALSE for saving the cropped data to the output folder. Default is FALSE.
 ```
 #Sample data
 polygon_sf <- st_polygon(list(matrix(c(-111, 45, 
@@ -185,9 +190,9 @@ polygon_sf <- st_sf(geometry = st_sfc(polygon_sf, crs = 4326))
 
 #List URLS
 cog_urls <- c(
-  "https://pathfinder.arcc.uwyo.edu/devise/SNODAS/SNODAS_SWE/SNODAS_20120405_SWE.tif",
-  "https://pathfinder.arcc.uwyo.edu/devise/SNODAS/SNODAS_SnowDepth/SNODAS_20120218_SnowDepth.tif",
-  "https://pathfinder.arcc.uwyo.edu/devise/DAYMET/DAYMET_prcp/DAYMET_v4_20050101_prcp.tif"
+  "https://pathfinder.arcc.uwyo.edu/merklelab/Landcover_RAP/RAP_2013_Biomass_AnnualForbsGrasses.tif",
+  "https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif",
+  " https://pathfinder.arcc.uwyo.edu/merklelab/DEM/TPI_330m.tif"
 )
 
 #Alternatively create a dataframe of urls from the Merkle Research Group Database
@@ -202,6 +207,6 @@ cog_urls <- DEM$url
 #Set output folder
 output_folder <- "C:/path/to/folder"
 
-CropRasters(cog_urls, polygon_sf, output_folder)
+CropRasters(cog_urls, polygon_sf, output_folder, writeData = TRUE)
 
 ```
