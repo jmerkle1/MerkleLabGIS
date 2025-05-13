@@ -10,66 +10,53 @@
 #' @return
 #' @import httr
 #' @import jsonlite
-#' @import raster
 #' @import terra
+#' @import sf
 #' @export
 #'
 #' @examples
 
 
-
-
-CropRasters <- function(cog_urls, polygon_sf, output_folder) {
-  require(raster)
-  require(sf)
+CropRasters <- function(cog_urls, polygon_sf, output_folder, writeData = FALSE) {
+  library(sf)
+  library(terra)
   
-  # Initialize an empty list to store cropped rasters
+  # Check polygon validity
+  if (!inherits(polygon_sf, "sf")) {
+    stop("The provided polygon must be an sf object.")
+  }
   
   cropped_rasters <- list()
   
-  # Iterate over the list of COG URLs
   for (cog_url in cog_urls) {
-    # Prepend '/vsicurl/' to the COG URL
     cog_path <- paste0("/vsicurl/", cog_url)
     
-    # Load the COG as a raster
-    cog_raster <- raster(cog_path)
+    # Read raster as SpatRaster
+    cog_raster <- rast(cog_path)
     
-    # Ensure the polygon_sf is of class 'sf'
-    if (!inherits(polygon_sf, "sf")) {
-      stop("The provided spatial object is not an sf object.")
-    }
+    # Reproject polygon to match raster CRS
+    polygon_projected <- st_transform(polygon_sf, crs(cog_raster))
     
-    projected_polygon_sf <- st_transform(polygon_sf, crs = projection(cog_raster))
+    # Crop and mask
+    cropped <- crop(cog_raster, vect(polygon_projected))
+    masked <- mask(cropped, vect(polygon_projected))
     
+    # Write output if requested
+    if (writeData) {
+      folder_name <- basename(dirname(cog_url))
+      dir_path <- file.path(output_folder, folder_name)
+      if (!dir.exists(dir_path)) dir.create(dir_path, recursive = TRUE)
       
-    # Crop the raster using the projected sf polygon
-    cropped_raster <- crop(cog_raster, as(projected_polygon_sf, "Spatial"))
-    plot(cropped_raster)
-    
-    # Extract the directory name from the COG URL for separate folder
-    folder_name <- basename(dirname(cog_url))
-    
-    # Check if directory exists, if not, create it
-    dir_path <- file.path(output_folder, folder_name)
-    if (!dir.exists(dir_path)) {
-      dir.create(dir_path)
+      file_name <- basename(cog_url)
+      output_path <- file.path(dir_path, file_name)
+      
+      writeRaster(masked, output_path, overwrite = TRUE)
     }
     
-    # Extract the file name from the COG URL
-    file_name <- basename(cog_url)
-    
-    # Construct the output file path
-    output_path <- file.path(dir_path, file_name)
-    
-    # Write the cropped raster to the specified output path
-    writeRaster(cropped_raster, output_path)
-    
-    # Add the cropped raster to the list
-    cropped_rasters <- append(cropped_rasters, cropped_raster)
+    cropped_rasters[[length(cropped_rasters) + 1]] <- masked
   }
   
-  # Return the list of cropped rasters
   return(cropped_rasters)
 }
+
 
