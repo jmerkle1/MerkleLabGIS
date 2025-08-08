@@ -26,9 +26,9 @@
 ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   
   # Import necessary libraries
-  require("snowfall")
-  require("sf")
-  require("terra")
+  # require("snowfall")
+  # require("sf")
+  # require("terra")
   
   # Check for input type
   if(!inherits(XYdata, "sf")) stop("XYdata is not an sf object")

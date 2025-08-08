@@ -3,9 +3,12 @@ Type: Package
 Version: 0.1.0
 Author: Jessie Shapiro & Jerod Merkle
 Maintainer: The package maintainer <jessie.shapiro@uwyo.edu>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Description: Provides functions to access and extract GIS data for Wyoming 
+    and the Greater Yellowstone Ecosystem (GYE) from the Merkle Research Group's 
+    cloud-based data library. Supports interaction with raster
+    datasets stored as Cloud Optimized GeoTIFFs (COGs) via an S3-compatible 
+    storage system.
+License: 
 Encoding: UTF-8
 LazyData: true
 Suggests: 
@@ -19,4 +22,6 @@ Imports:
   terra,
   sf,
   tidyverse,
-  snowfall
+  snowfall,
+  lubridate,
+  parellel

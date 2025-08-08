@@ -8,15 +8,14 @@
 #' @param outDir A character specifying the root output directory for downloaded files. This should be the root directory, sub-directories will be created if missing. Assumes your current working directory by default
 #'
 #' @return Returns the downloaded DEVISE study area DAYMET GeoTif files. Output is projected into epsg:5072 and cropped to DEVISE Study Extent
-#'
+#' @import terra
+#' @import lubridate
 #' @export
 
 
 
 DownloadDAYMET<- function(params = c( "prcp"), startDate, endDate, outDir) {
-  library(terra)
-  library(lubridate)
-  
+
   # validate params
   allowed_metrics <- c("prcp", "swe", "tmax", "tmin")
   

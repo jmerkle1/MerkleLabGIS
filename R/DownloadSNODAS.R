@@ -10,6 +10,8 @@
 #' @return Returns the downloaded DEVISE study area SNODAS GeoTif files. Output is projected into epsg:5072 and cropped to DEVISE Study Extent
 #'
 #' @examples
+#' @import terra
+#' @import lubridate
 #' # Download all SNODAS datasets for a range of dates.
 #' download_SNODAS(params = c( "SWE", "SnowDepth"), startDate = "2020-09-01", endDate = "2020-09-05", outDir = "./Test")
 #'
@@ -18,8 +20,6 @@
 
 
 DownloadSNODAS <- function(params = c("swe", "snowdepth"), startDate, endDate, outDir) {
-  library(terra)
-  library(lubridate)
   
   # validate params
   allowed_metrics <- c("swe", "snowdepth", "snowdepth-accum", "snowmelt", "snowdays")

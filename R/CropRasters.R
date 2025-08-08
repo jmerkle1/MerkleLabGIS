@@ -6,6 +6,7 @@
 #' @param cog_urls A vector of raster URLs. These URLS should point directly to the geotiff files that you intend to crop from the Merkle Database
 #' @param polygon_sf An sf polygon object
 #' @param output_folder Output directory path of the cropped rasters
+#' @param writeData If true, save the cropped rasters to the output folder. If FALSE (default), rasters are returned in memory only
 #'
 #' @return
 #' @import httr
@@ -18,8 +19,6 @@
 
 
 CropRasters <- function(cog_urls, polygon_sf, output_folder, writeData = FALSE) {
-  library(sf)
-  library(terra)
   
   # Check polygon validity
   if (!inherits(polygon_sf, "sf")) {

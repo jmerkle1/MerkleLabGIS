@@ -37,11 +37,11 @@ ExtractAnnualSNODAS <- function(point_data, start_date, end_date, metric_name = 
     stop(paste0("metric_name must be one or more of: ", paste(allowed_metrics, collapse = ", ")))
   }
   
-  library(terra)
-  library(sf)
-  library(parallel)
-  library(lubridate)
-  
+  # library(terra)
+  # library(sf)
+  # library(parallel)
+  # library(lubridate)
+  # 
   if (is.null(num_cores)) num_cores <- detectCores() - 1
   
   years <- seq(year(start_date), year(end_date))

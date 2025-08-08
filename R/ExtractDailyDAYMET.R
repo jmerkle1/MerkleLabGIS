@@ -38,13 +38,13 @@ ExtractDailyDAYMET <- function(XYdata, datesname = "date", Metrics = "prcp",num_
   }
   
   
-  require("sf")
-  require("parallel")
-  require("terra")
-  require("httr")
-  require("jsonlite")
-  require("dplyr")
-  require("lubridate")
+  # require("sf")
+  # require("parallel")
+  # require("terra")
+  # require("httr")
+  # require("jsonlite")
+  # require("dplyr")
+  # require("lubridate")
   #Check cores
   if(is.null(num_cores)){
     num_cores <- detectCores()-1

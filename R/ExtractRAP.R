@@ -20,6 +20,7 @@
 #' @import terra
 #' @import dplyr
 #' @import MerkleLabGIS
+#' @import parallel
 #' @export
 #' 
 #' 
@@ -34,9 +35,9 @@ ExtractRAP <- function(XYdata,
   
   if(all(c("terra","sf","parallel") %in% installed.packages()[,1])==FALSE)
     stop("You must install the following packages: raster, sf, and parallel")
-  require("terra")
-  require("sf")
-  require("parallel")
+  # require("terra")
+  # require("sf")
+  # require("parallel")
   
   if (is.null(bio_year_start))
   {

@@ -24,7 +24,7 @@ cog <- rast("/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annua
 year_2004 <- cog[[1]]
 ```
 ## Functions
-To maximize utility, we offer multiple ways to interact with our raster and vector data. This repository houses several extraction functions designed to streamline the use of our GIS data.
+To maximize utility, we offer multiple ways to interact with our raster data. This repository houses several extraction functions designed to streamline the use of our GIS data.
 ### Read all available GIS Data
 Read all geospatial layers in the S3 bucket using bucket(). After running the bucket() function, it returns a dataframe of the URLS and other metadata for each geospatial layer.
 ```
@@ -63,6 +63,7 @@ to extract specific annual metrics for given geographic points and dates.To use 
 2. **start_date**: This is the beginning of the date range from which you want to start extracting the metric.
 3. **end_date**: This indicates the end of the date range up to which you want to extract the metric.
 4. **metric_name**: Specify the metrics you are interested in (e.g., "snowdepth", "snowdepth-accum", "swe", "snowdays", "snowmelt").
+5. **num_cores**: Number of cores to use for parallel processing. If no value is defined, the function will auto detect how many cores are available on your machine. 
 
 
 ```
@@ -71,7 +72,7 @@ points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.5473
   sf::st_as_sf(coords = c("x", "y"), crs = 4326)
   
 MaxSnowDepth <- ExtractAnnualSNODAS(point_data = points, start_date = "2005-01-01", 
-                        end_date = "2010-01-01", metric_name = "snowdepth")
+                        end_date = "2010-01-01", metric_name = "snowdepth", num_cores = 2)
 ```
 
 ### Extract Daily SNODAS
@@ -108,14 +109,15 @@ The Extract Annual DAYMET function processes data from DAYMET to extract specifi
 2. **start_date**: This is the beginning of the date range from which you want to start extracting the metric.
 3. **end_date**: This indicates the end of the date range up to which you want to extract the metric.
 4. **metric_name**: Specify the metrics you are interested in ("prcp", "swe", "tmax", "tmin").
+5. **num_cores**: Number of cores to use for parallel processing. If no value is defined, the function will auto detect how many cores are available on your machine. 
 
 ```
 #Sample data
 points <- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.54731, 45.54731)) %>%
   sf::st_as_sf(coords = c("x", "y"), crs = 4326)
   
-maxprcp<- ExtractDAYMET(point_data= points, start_date = "2005-01-01", 
-                        end_date = "2010-01-01", metric_name = "prcp")
+prcp <- ExtractAnnualDAYMET(point_data= points, start_date = "2005-01-01", 
+                        end_date = "2010-01-01", metric_name = "prcp", num_cores = 2)
 ```
 
 ### Extract Daily DAYMET

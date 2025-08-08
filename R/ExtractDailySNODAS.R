@@ -36,14 +36,14 @@ ExtractDailySNODAS <- function(XYdata, datesname = "date", Metrics = c("swe", "s
   if (!all(Metrics %in% allowed_metrics)) {
     stop(paste0("Metrics must be one or more of: ", paste(allowed_metrics, collapse = ", ")))
   }
-  
-  require("sf")
-  require("parallel")
-  require("terra")
-  require("httr")
-  require("jsonlite")
-  require("dplyr")
-  require("lubridate")
+  # 
+  # require("sf")
+  # require("parallel")
+  # require("terra")
+  # require("httr")
+  # require("jsonlite")
+  # require("dplyr")
+  # require("lubridate")
   
   #Check cores
   if(is.null(num_cores)){

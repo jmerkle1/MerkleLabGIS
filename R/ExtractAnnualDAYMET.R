@@ -17,6 +17,9 @@
 #' @import jsonlite
 #' @import tidyverse
 #' @import httr
+#' @import parallel
+#' @import lubridate
+
 #' @export
 #' 
 #' 
@@ -35,10 +38,10 @@ ExtractAnnualDAYMET <- function(point_data, start_date, end_date, metric_name = 
     stop(paste0("metric_name must be one or more of: ", paste(allowed_metrics, collapse = ", ")))
   }
   
-  require(terra)
-  require(sf)
-  require(parallel)
-  require(lubridate)
+  # require(terra)
+  # require(sf)
+  # require(parallel)
+  # require(lubridate)
   
   if (is.null(num_cores)) num_cores <- detectCores() - 1
   
