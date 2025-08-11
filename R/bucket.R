@@ -5,7 +5,7 @@
 #' all available spatial layers in the Merkle Lab GIS system. The metadata 
 #' includes details about each spatial layer, such as its name, description, 
 #' type, and other relevant attributes.
-#' #'
+#' 
 #' 
 #' @return A data frame containing metadata fora ll available spatial layers
 #' @import httr
