@@ -24,4 +24,4 @@ Imports:
   tidyverse,
   snowfall,
   lubridate,
-  parellel
+  parallel
