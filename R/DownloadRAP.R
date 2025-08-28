@@ -34,7 +34,7 @@ DownloadRAP <- function(RAPmetric = c("Biomass_AnnualForbsGrasses", "Cover_BareG
   }
   
   # Fetch RAP data from pathfinder
-  message("Requesting metadata from MerkleLabGIS API...)
+  message("Requesting metadata from MerkleLabGIS API...")
   
   dt <- bucket()
   RAP <- dt[dt$category == "Landcover_RAP",]
