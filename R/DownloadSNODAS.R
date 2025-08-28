@@ -21,6 +21,9 @@
 
 DownloadSNODAS <- function(params = c("swe", "snowdepth"), startDate, endDate, outDir) {
   
+  message("--------------------------------------------------")
+  message("SNODAS download started...")
+  
   # validate params
   allowed_metrics <- c("swe", "snowdepth", "snowdepth-accum", "snowmelt", "snowdays")
   

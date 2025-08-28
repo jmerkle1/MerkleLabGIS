@@ -14,6 +14,10 @@
 DownloadRAP <- function(RAPmetric = c("Biomass_AnnualForbsGrasses", "Cover_BareGround"),
                         years = 2022,
                         outDir) {
+  
+  message("--------------------------------------------------")
+  message("Starting RAP download...")
+  
   # Check RAP Metric
   if(any(RAPmetric %in% c("Biomass_AnnualForbsGrasses","Biomass_PerennialForbsGrasses", 
                           "Cover_AnnualForbsGrasses","Cover_BareGround","Cover_Litter","Cover_PerennialForbsGrasses",
@@ -30,6 +34,8 @@ DownloadRAP <- function(RAPmetric = c("Biomass_AnnualForbsGrasses", "Cover_BareG
   }
   
   # Fetch RAP data from pathfinder
+  message("Requesting metadata from MerkleLabGIS API...)
+  
   dt <- bucket()
   RAP <- dt[dt$category == "Landcover_RAP",]
   
@@ -57,4 +63,7 @@ DownloadRAP <- function(RAPmetric = c("Biomass_AnnualForbsGrasses", "Cover_BareG
       message(paste0("Downloaded ", filename, " to ", dest_path))
     }
   }
+  message("RAP download job finished")
+  message("--------------------------------------------------")
+  
 }

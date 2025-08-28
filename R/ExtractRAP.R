@@ -32,6 +32,9 @@ ExtractRAP <- function(XYdata,
                        bio_year_start = NULL,
                        datesname,
                        maxcpus = NULL) {
+  message("--------------------------------------------------")
+  message("Starting RAP extraction...")
+  
   
   if(all(c("terra","sf","parallel") %in% installed.packages()[,1])==FALSE)
     stop("You must install the following packages: raster, sf, and parallel")
@@ -52,6 +55,11 @@ ExtractRAP <- function(XYdata,
   }else{
     maxcpus <- maxcpus
   }
+  
+  message("Using up to ", maxcpus, " CPU cores.")
+  
+  # Fetch RAP metadata
+  message("Fetching RAP metadata from bucket...")
   
   #Fetch RAP data from pathfinder
   dt <- bucket()
@@ -100,6 +108,8 @@ ExtractRAP <- function(XYdata,
   XYdata <- st_transform(XYdata, crs = 4326)
   XYdata <- XYdata[order(XYdata[[datesname]]), ]
   
+  message("Extracting RAP data...")
+  
   rap_list <- do.call(rbind, parallel::clusterApplyLB(clust, 1:length(yrs), function(i){
     library(sf)
     library(terra)
@@ -147,6 +157,8 @@ ExtractRAP <- function(XYdata,
   
   # Reproject back to original data
   XYdata <- st_transform(XYdata, crs = original_crs)
+  message("RAP extraction finished.")
+  message("--------------------------------------------------")
   
   return(XYdata)
 }

@@ -27,6 +27,9 @@
 
 ExtractDailySNODAS <- function(XYdata, datesname = "date", Metrics = c("swe", "snowdepth"),
                                num_cores = NULL) {
+  message("--------------------------------------------------")
+  message("Starting SNODAS extraction...")
+  
   if (!inherits(XYdata, "sf"))
     stop("XYdata must be an sf object")
   
@@ -72,6 +75,9 @@ ExtractDailySNODAS <- function(XYdata, datesname = "date", Metrics = c("swe", "s
   })
   clusterExport(clust, varlist = c("XYdata", "Metrics"), envir = environment())
   
+  message("Extracting SNODAS values from remote COGs...")
+  
+  
   result_list <- clusterApplyLB(clust, 1:nrow(XYdata), function(i) {
     row <- XYdata[i, ]
     values <- sapply(Metrics, function(metric) {
@@ -95,11 +101,16 @@ ExtractDailySNODAS <- function(XYdata, datesname = "date", Metrics = c("swe", "s
   })
   
   stopCluster(clust)
+  message("SNODAS extraction complete. Combining results...")
   
   result_df <- do.call(rbind, result_list)
   colnames(result_df) <- Metrics
   
   XYdata <- cbind(XYdata, result_df)
   XYdata <- st_transform(XYdata, crs = original_crs)
+  
+  message("Extraction finished. Returning data.")
+  message("--------------------------------------------------")
+  
   return(XYdata)
 }

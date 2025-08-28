@@ -194,7 +194,7 @@ polygon_sf <- st_sf(geometry = st_sfc(polygon_sf, crs = 4326))
 cog_urls <- c(
   "https://pathfinder.arcc.uwyo.edu/merklelab/Landcover_RAP/RAP_2013_Biomass_AnnualForbsGrasses.tif",
   "https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif",
-  " https://pathfinder.arcc.uwyo.edu/merklelab/DEM/TPI_330m.tif"
+  "https://pathfinder.arcc.uwyo.edu/merklelab/DEM/TPI_330m.tif"
 )
 
 #Alternatively create a dataframe of urls from the Merkle Research Group Database

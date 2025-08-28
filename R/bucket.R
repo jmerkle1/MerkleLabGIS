@@ -16,9 +16,15 @@
 #' @examples
 #' bucket()
 bucket <- function() {
-
+  
+  message("--------------------------------------------------")
+  message("Requesting metadata from MerkleLabGIS API...")
+  
   MerkleLabGIS <- GET("https://wildlifemovetools.org/api/layersmetadata")
-  MerkleLabGIS <- fromJSON(rawToChar(MerkleLabGIS$content))  
+  MerkleLabGIS <- fromJSON(rawToChar(MerkleLabGIS$content)) 
+  
+  message("Metadata successfully retrieved and parsed")
+  message("--------------------------------------------------")
   
   return(MerkleLabGIS)
 }

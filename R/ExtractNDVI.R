@@ -30,6 +30,10 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   # require("sf")
   # require("terra")
   
+  message("--------------------------------------------------")
+  message("Starting MODIS NDVI extraction...")
+  
+  
   # Check for input type
   if(!inherits(XYdata, "sf")) stop("XYdata is not an sf object")
   
@@ -42,6 +46,8 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
     stop("The NDVImetric must only be MaxNDVIDay, MaxIRGday, SpringStartDay, SpringEndDay,
           NDVI_scaled, IRG_scaled, MaxBrownDownDay, SpringSE, SpringScale, SpringLength, or sumIRG.")
   }
+  
+  message("Fetching MODIS NDVI metadata...")
   
   dt <- bucket()
   MODIS_NDVI <- dt[dt$category == "MODIS_NDVI",]
@@ -56,6 +62,8 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   XYdata$unique <- 1:nrow(XYdata)
   u <- unique(XYdata$year)
   
+  message("Initializing parallel processing with ", maxcpus, " cores...")
+  
   vals_list <- list() # Empty list to store results for each metric
   sfInit(parallel=TRUE, cpus= maxcpus) 
   
@@ -63,6 +71,7 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   sfExport('MODIS_NDVI','vals_list')
   
   for(metric in NDVImetric){
+    message("Extracting metric: ", metric)
     
     vals <- tryCatch(
       {
@@ -179,10 +188,14 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
     
     if (!is.null(vals)) {
       vals_list[[metric]] <- vals # Store the result for this metric in the list
-    }
+      message("Finished extracting: ", metric)
+      
+      }
   }
   
   # Combine the results for all metrics
+  message("Merging extracted metric values into original dataset...")
+  
   for(i in 1:length(NDVImetric)){
     metric = NDVImetric[i]
     if(i == 1){
@@ -197,6 +210,9 @@ ExtractNDVI <- function(XYdata, NDVImetric, datesname, maxcpus = 4){
   XYdata$unique <- NULL
   XYdata$year <- NULL
   XYdata$jul <- NULL
+  message("MODIS NDVI extraction complete.")
+  message("--------------------------------------------------")
+  
   return(XYdata)
   #return(XYdata[,c("unique", datesname, NDVImetric)])
 }

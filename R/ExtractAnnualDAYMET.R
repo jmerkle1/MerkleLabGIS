@@ -28,6 +28,9 @@
 
 
 ExtractAnnualDAYMET <- function(point_data, start_date, end_date, metric_name = c("prcp"), num_cores = NULL) {
+  message("--------------------------------------------------")
+  message("Starting DAYMET extraction...")
+  
   if (!inherits(point_data, "sf"))
     stop("point_data must be an sf object")
   
@@ -55,6 +58,7 @@ ExtractAnnualDAYMET <- function(point_data, start_date, end_date, metric_name = 
     library(sf)
   })
   clusterExport(clust, varlist = c("point_data", "metric_name", "years"), envir = environment())
+  message("Extracting DAYMET values from remote COGs...")
   
   result_list <- clusterApplyLB(clust, 1:nrow(point_data), function(i) {
     row <- point_data[i, ]
@@ -87,9 +91,14 @@ ExtractAnnualDAYMET <- function(point_data, start_date, end_date, metric_name = 
   })
   
   stopCluster(clust)
+  message("DAYMET extraction complete. Combining results...")
   
   final_df <- do.call(rbind, result_list)
   output <- cbind(point_data, final_df)
   output <- st_transform(output, crs = original_crs)
+  
+  message("Extraction finished. Returning data.")
+  message("--------------------------------------------------")
+  
   return(output)
 }

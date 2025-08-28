@@ -30,13 +30,32 @@ CropRasters <- function(cog_urls, polygon_sf, output_folder, writeData = FALSE) 
   for (cog_url in cog_urls) {
     cog_path <- paste0("/vsicurl/", cog_url)
     
+    message("--------------------------------------------------")
+    message("Processing: ", basename(cog_url))
+    
+    
     # Read raster as SpatRaster
     cog_raster <- rast(cog_path)
+    
+    #If name is missing grab it from filename
+    if (all(names(cog_raster) == "layer")) {
+      base_name <- tools::file_path_sans_ext(basename(cog_url))
+
+      if (nlyr(cog_raster) == 1) {
+        names(cog_raster) <- base_name
+      } else {
+        names(cog_raster) <- paste0(base_name, "_band", seq_len(nlyr(cog_raster)))
+      }
+    }
+    
+    message("Reprojecting polygon to match raster CRS...")
     
     # Reproject polygon to match raster CRS
     polygon_projected <- st_transform(polygon_sf, crs(cog_raster))
     
     # Crop and mask
+    message("Cropping raster...")
+    
     cropped <- crop(cog_raster, vect(polygon_projected))
     masked <- mask(cropped, vect(polygon_projected))
     
@@ -49,11 +68,16 @@ CropRasters <- function(cog_urls, polygon_sf, output_folder, writeData = FALSE) 
       file_name <- basename(cog_url)
       output_path <- file.path(dir_path, file_name)
       
+      message("Writing raster to: ", output_path)
       writeRaster(masked, output_path, overwrite = TRUE)
+    } else {
+      message("Raster kept in memory (not written to disk).")
     }
     
     cropped_rasters[[length(cropped_rasters) + 1]] <- masked
   }
+  message("Finished processing ", length(cropped_rasters), " rasters.")
+  message("--------------------------------------------------")
   
   return(cropped_rasters)
 }

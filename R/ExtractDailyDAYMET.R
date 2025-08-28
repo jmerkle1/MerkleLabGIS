@@ -27,6 +27,9 @@
 
 
 ExtractDailyDAYMET <- function(XYdata, datesname = "date", Metrics = "prcp",num_cores = NULL) {
+  message("--------------------------------------------------")
+  message("Starting DAYMET extraction...")
+  
   if (!inherits(XYdata, "sf"))
     stop("XYdata must be an sf object")
   
@@ -71,6 +74,8 @@ ExtractDailyDAYMET <- function(XYdata, datesname = "date", Metrics = "prcp",num_
   })
   clusterExport(clust, varlist = c("XYdata", "Metrics"), envir = environment())
   
+  message("Extracting DAYMET values from remote COGs...")
+  
   result_list <- clusterApplyLB(clust, 1:nrow(XYdata), function(i) {
     row <- XYdata[i, ]
     values <- sapply(Metrics, function(metric) {
@@ -94,12 +99,16 @@ ExtractDailyDAYMET <- function(XYdata, datesname = "date", Metrics = "prcp",num_
   })
   
   stopCluster(clust)
+  message("DAYMET extraction complete. Combining results...")
   
   result_df <- do.call(rbind, result_list)
   colnames(result_df) <- Metrics
   
   XYdata <- cbind(XYdata, result_df)
   XYdata <- st_transform(XYdata, crs = original_crs)
+  message("Extraction finished. Returning data.")
+  message("--------------------------------------------------")
+  
   return(XYdata)
 }
 
