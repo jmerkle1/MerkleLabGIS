@@ -26,8 +26,8 @@
 #' 
 #' 
 
-
-ExtractAnnualDAYMET <- function(point_data, start_date, end_date, metric_name = c("prcp"), num_cores = NULL) {
+ExtractAnnualDAYMET <- function(point_data, start_date, end_date,
+                                metric_name = c("prcp"), num_cores = NULL) {
   message("--------------------------------------------------")
   message("Starting DAYMET extraction...")
   
@@ -36,15 +36,9 @@ ExtractAnnualDAYMET <- function(point_data, start_date, end_date, metric_name = 
   
   allowed_metrics <- c("prcp", "swe", "tmax", "tmin")
   metric_name <- tolower(metric_name)
-  
   if (!all(metric_name %in% allowed_metrics)) {
     stop(paste0("metric_name must be one or more of: ", paste(allowed_metrics, collapse = ", ")))
   }
-  
-  # require(terra)
-  # require(sf)
-  # require(parallel)
-  # require(lubridate)
   
   if (is.null(num_cores)) num_cores <- detectCores() - 1
   
@@ -52,53 +46,50 @@ ExtractAnnualDAYMET <- function(point_data, start_date, end_date, metric_name = 
   original_crs <- st_crs(point_data)
   point_data <- st_transform(point_data, 5072)
   
+  # Parallel over metrics
   clust <- makeCluster(num_cores)
-  clusterEvalQ(clust, {
-    library(terra)
-    library(sf)
-  })
-  clusterExport(clust, varlist = c("point_data", "metric_name", "years"), envir = environment())
+  clusterEvalQ(clust, { library(terra); library(sf) })
+  clusterExport(clust, c("point_data", "years"), envir = environment())
+  
   message("Extracting DAYMET values from remote COGs...")
   
-  result_list <- clusterApplyLB(clust, 1:nrow(point_data), function(i) {
-    row <- point_data[i, ]
-    result_vector <- list()
+  result_list <- clusterApplyLB(clust, metric_name, function(metric) {
+    url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/daymet/daymet_annual_%s_all-years.tif", metric)
+    vsicurl_path <- paste0("/vsicurl/", url)
     
-    for (metric in metric_name) {
-      url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/daymet/daymet_annual_%s_all-years.tif", metric)
-      vsicurl_path <- paste0("/vsicurl/", url)
+    tryCatch({
+      r <- terra::rast(vsicurl_path)
       
-      tryCatch({
-        r <- terra::rast(vsicurl_path)
-        
-        for (yr in years) {
-          band_index <- which(grepl(paste0(metric, "_", yr), names(r)))
-          value <- NA
-          if (length(band_index) > 0) {
-            v <- terra::extract(r[[band_index]], row)
-            if (!is.null(v) && ncol(v) > 1) value <- v[1, 2]
+      res_metric <- matrix(NA, nrow = nrow(point_data), ncol = length(years))
+      colnames(res_metric) <- paste0(metric, "_", years)
+      
+      for (k in seq_along(years)) {
+        yr <- years[k]
+        band_index <- which(grepl(paste0(metric, "_", yr), names(r)))
+        if (length(band_index) > 0) {
+          v <- terra::extract(r[[band_index]], point_data)
+          if (!is.null(v) && ncol(v) > 1) {
+            res_metric[, k] <- v[,2]
           }
-          result_vector[[paste0(metric, "_", yr)]] <- value
         }
-      }, error = function(e) {
-        for (yr in years) {
-          result_vector[[paste0(metric, "_", yr)]] <- NA
-        }
-      })
-    }
-    
-    return(as.data.frame(result_vector))
+      }
+      as.data.frame(res_metric)
+    }, error = function(e) {
+      df_na <- as.data.frame(matrix(NA, nrow = nrow(point_data), ncol = length(years)))
+      colnames(df_na) <- paste0(metric, "_", years)
+      df_na
+    })
   })
   
   stopCluster(clust)
   message("DAYMET extraction complete. Combining results...")
   
-  final_df <- do.call(rbind, result_list)
+  final_df <- do.call(cbind, result_list)
   output <- cbind(point_data, final_df)
   output <- st_transform(output, crs = original_crs)
   
   message("Extraction finished. Returning data.")
   message("--------------------------------------------------")
-  
   return(output)
 }
+
