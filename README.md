@@ -38,10 +38,12 @@ dt <- bucket()
 The ExtractRAP function is designed to extract spatially and temporally explicit Rangeland Analysis Platform (RAP) data for given geographic points and dates. To use this function, you need to provide the following inputs:
 
 1. **XYdata**: Spatial data representing the geographic points for which you want to extract RAP metrics.
-2. **RAPmetric**: Specify the metrics you are interested in (e.g., Biomass_AnnualForbsGrasses,Biomass_PerennialForbsGrasses, Cover_AnnualForbsGrasses,Cover_BareGround,Cover_Litter,Cover_PerennialForbsGrasses,Cover_Shrubs,Cover_Trees).
+2. **RAPmetric**: Specify the metrics you are interested in. Most metrics are available at 30m resolution (e.g., Biomass_AnnualForbsGrasses,Biomass_PerennialForbsGrasses, Cover_AnnualForbsGrasses,Cover_BareGround,Cover_Litter,Cover_PerennialForbsGrasses,Cover_Shrubs,Cover_Trees), while 10m resolution (2018-2024) is available for some metrics (e.g., Cover_Sagebrush, Cover_PinyonJuniper, Cover_AnnualInvasiveGrass, Cover_Trees, Cover_Litter, Cover_Bareground, Cover_AnnualForbsGrasses, Cover_PerennialForbsGrasses, Cover_Shrubs)
 3. **datesname**: Indicate the name of the column representing date as POSIXct.
 4. **bio_year_start**: This parameter determines the growing season for which you want to run the function. This sets the beginning of the growing season and should be specified as a Julian day (an integer between 1 and 365). If not specified, the default value is 150, corresponding to May 30th. Any dates before the "bio_year_start" will result in the extraction of RAP metrics for the growing season of the prior year.
 5. **maxcpus**: Number of cores to use for parallel processing. If no value is defined, the function will auto detect how many cores are available on your machine. 
+5. **resolution**: Spatial resolution of RAP data to extract. Options are 30m or 10m available only for 2018–2024, and required for some metrics such as `Cover_Sagebrush`, `Cover_PinyonJuniper`, an `Cover_AnnualInvasiveGrass`. 
+
 ```
 #Sample data
 set.seed(42) 
@@ -53,7 +55,7 @@ pts <- data.frame(
   dates = as.POSIXct(sample(seq(as.Date('2010/01/01'), as.Date('2022/12/31'), by="day"), 5, replace = TRUE), tz = "UTC")
 )
 pts_sf <- st_as_sf(pts, coords = c("long", "lat"), crs = 4326, agr = "constant")
-rap <- ExtractRAP(pts_sf, RAPmetric = "Cover_BareGround", datesname = "dates",bio_year_start = 150, maxcpus = 10 )
+rap <- ExtractRAP(pts_sf, RAPmetric = "Cover_BareGround", datesname = "dates",bio_year_start = 150, maxcpus = 10, resolution = "30m" )
 ```
 ### Extract Annual SNODAS
 The Extract Annual SNODAS function processes data from SNODAS

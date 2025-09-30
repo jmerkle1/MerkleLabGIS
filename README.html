@@ -360,37 +360,47 @@ display: none;
 extracting and managing GIS data for Wyoming and the Greater Yellowstone
 Ecosystem (GYE). We utilize a cloud storage solution to make geospatial
 data, which is freely available, easily accessible. You can access these
-data either through our code or by using our <a href="https://pathfinder.arcc.uwyo.edu/devise/MerkleLabGIS/WebApp/map.html">data
-viewer</a>. ### Pathfinder Pathfinder is our chosen storage solution,
-facilitating a cloud-like presence powered by ARCC. At its core, it
-provides services such as onsite backups, data sharing, and
-collaboration. Pathfinder employs the Simple Storage Service (S3)
-protocol, initially devised by Amazon. The object storage in S3 operates
-via a service known as Ceph, a feature of Red Hat Enterprise Linux.</p>
+data either through our code or by using our <a href="https://wildlifemovetools.org/gis">data viewer</a>. ### Pathfinder
+Pathfinder is our chosen storage solution, facilitating a cloud-like
+presence powered by ARCC. At its core, it provides services such as
+onsite backups, data sharing, and collaboration. Pathfinder employs the
+Simple Storage Service (S3) protocol, initially devised by Amazon. The
+object storage in S3 operates via a service known as Ceph, a feature of
+Red Hat Enterprise Linux.</p>
 <div id="cloud-optimized-geotiffs" class="section level3">
 <h3>Cloud Optimized GeoTiffs</h3>
 <p>COGs are geospatial raster files tailored for cloud environments.
 Their design ensures efficient access and storage, allowing users to
 fetch specific portions of raster data without the need to download the
 entire file.</p>
+<p>As of the latest update, WyGISC now stores all SNODAS, PRISM, DAYMET,
+and RSPM datasets as multi-band raster stacks. Instead of having
+separate .tif files for each day, year, or month, a single COG now
+contains multiple temporal layers as bands. Users must specify the
+appropriate band index when accessing data for a specific time
+period.</p>
 <p>For those interested in reading COGs in R via the terra package, the
 code snippet below will prove helpful. By prefixing the URL with
 /vsicurl/, GDAL interprets the remote file as a local one. This means
 you can read and process the data without downloading it explicitly:</p>
-<pre><code> library(terra)
-                #Change to the raster url you want to read in. 
-                cog &lt;- rast(&quot;/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/MerkleLabGIS/Landcover_NLCD/NLCD_2008_Landcover.tif&quot;) 
-                plot(cog)</code></pre>
+<pre><code>library(terra)
+#Change to the raster url you want to read in. 
+cog &lt;- rast(&quot;/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/MerkleLabGIS/Landcover_NLCD/NLCD_2008_Landcover.tif&quot;) 
+plot(cog)</code></pre>
+<p>To extract a specific year or day from a multi-band COG, you can use
+band indexing:</p>
+<pre><code>cog &lt;- rast(&quot;/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif&quot;)
+year_2004 &lt;- cog[[1]]</code></pre>
 </div>
 </div>
 <div id="functions" class="section level2">
 <h2>Functions</h2>
 <p>To maximize utility, we offer multiple ways to interact with our
-raster and vector data. This repository houses several extraction
-functions designed to streamline the use of our GIS data. ### Read all
-available GIS Data Read all geospatial layers in the S3 bucket using
-bucket(). After running the bucket() function, it returns a dataframe of
-the URLS and other metadata for each geospatial layer.</p>
+raster data. This repository houses several extraction functions
+designed to streamline the use of our GIS data. ### Read all available
+GIS Data Read all geospatial layers in the S3 bucket using bucket().
+After running the bucket() function, it returns a dataframe of the URLS
+and other metadata for each geospatial layer.</p>
 <pre><code>library(devtools)
 devtools::install_github(&quot;jmerkle1/MerkleLabGIS&quot;)
 library(MerkleLabGIS)
@@ -405,8 +415,13 @@ the following inputs:</p>
 <li><strong>XYdata</strong>: Spatial data representing the geographic
 points for which you want to extract RAP metrics.</li>
 <li><strong>RAPmetric</strong>: Specify the metrics you are interested
-in (e.g., Biomass_AnnualForbsGrasses,Biomass_PerennialForbsGrasses,
-Cover_AnnualForbsGrasses,Cover_BareGround,Cover_Litter,Cover_PerennialForbsGrasses,Cover_Shrubs,Cover_Trees).</li>
+in. Most metrics are available at 30m resolution (e.g.,
+Biomass_AnnualForbsGrasses,Biomass_PerennialForbsGrasses,
+Cover_AnnualForbsGrasses,Cover_BareGround,Cover_Litter,Cover_PerennialForbsGrasses,Cover_Shrubs,Cover_Trees),
+while 10m resolution (2018-2024) is available for some metrics (e.g.,
+Cover_Sagebrush, Cover_PinyonJuniper, Cover_AnnualInvasiveGrass,
+Cover_Trees, Cover_Litter, Cover_Bareground, Cover_AnnualForbsGrasses,
+Cover_PerennialForbsGrasses, Cover_Shrubs)</li>
 <li><strong>datesname</strong>: Indicate the name of the column
 representing date as POSIXct.</li>
 <li><strong>bio_year_start</strong>: This parameter determines the
@@ -419,6 +434,11 @@ the prior year.</li>
 <li><strong>maxcpus</strong>: Number of cores to use for parallel
 processing. If no value is defined, the function will auto detect how
 many cores are available on your machine.</li>
+<li><strong>resolution</strong>: Spatial resolution of RAP data to
+extract. Options are 30m or 10m available only for 2018–2024, and
+required for some metrics such as <code>Cover_Sagebrush</code>,
+<code>Cover_PinyonJuniper</code>, an
+<code>Cover_AnnualInvasiveGrass</code>.</li>
 </ol>
 <pre><code>#Sample data
 set.seed(42) 
@@ -430,7 +450,7 @@ pts &lt;- data.frame(
   dates = as.POSIXct(sample(seq(as.Date(&#39;2010/01/01&#39;), as.Date(&#39;2022/12/31&#39;), by=&quot;day&quot;), 5, replace = TRUE), tz = &quot;UTC&quot;)
 )
 pts_sf &lt;- st_as_sf(pts, coords = c(&quot;long&quot;, &quot;lat&quot;), crs = 4326, agr = &quot;constant&quot;)
-rap &lt;- ExtractRAP(pts_sf, RAPmetric = &quot;Cover_BareGround&quot;, datesname = &quot;dates&quot;,bio_year_start = 150, maxcpus = 10 )</code></pre>
+rap &lt;- ExtractRAP(pts_sf, RAPmetric = &quot;Cover_BareGround&quot;, datesname = &quot;dates&quot;,bio_year_start = 150, maxcpus = 10, resolution = &quot;30m&quot; )</code></pre>
 </div>
 <div id="extract-annual-snodas" class="section level3">
 <h3>Extract Annual SNODAS</h3>
@@ -446,14 +466,18 @@ from which you want to start extracting the metric.</li>
 <li><strong>end_date</strong>: This indicates the end of the date range
 up to which you want to extract the metric.</li>
 <li><strong>metric_name</strong>: Specify the metrics you are interested
-in (e.g., MaxSnowDepth, MaxSWE, MeanSnowDepth).</li>
+in (e.g., “snowdepth”, “snowdepth-accum”, “swe”, “snowdays”,
+“snowmelt”).</li>
+<li><strong>num_cores</strong>: Number of cores to use for parallel
+processing. If no value is defined, the function will auto detect how
+many cores are available on your machine.</li>
 </ol>
 <pre><code>#Sample data
 points &lt;- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.54731, 45.54731)) %&gt;%
   sf::st_as_sf(coords = c(&quot;x&quot;, &quot;y&quot;), crs = 4326)
   
 MaxSnowDepth &lt;- ExtractAnnualSNODAS(point_data = points, start_date = &quot;2005-01-01&quot;, 
-                        end_date = &quot;2010-01-01&quot;, metric_name = &quot;MaxSnowDepth&quot;)</code></pre>
+                        end_date = &quot;2010-01-01&quot;, metric_name = &quot;snowdepth&quot;, num_cores = 2)</code></pre>
 </div>
 <div id="extract-daily-snodas" class="section level3">
 <h3>Extract Daily SNODAS</h3>
@@ -466,7 +490,7 @@ points for which you want to extract daily SNODAS metrics.</li>
 <li><strong>datesname</strong>: Indicate the name of the column
 representing date as POSIXct.</li>
 <li><strong>Metrics</strong>: Specify the metrics you are interested in
-(SWE or SnowDepth) .</li>
+(“snowdepth”, “snowdepth-accum”, “swe”, “snowdays”, “snowmelt”) .</li>
 <li><strong>num_cores</strong>: Number of cores to use for parallel
 processing. If no value is defined, the function will auto detect how
 many cores are available on your machine.</li>
@@ -483,7 +507,7 @@ pts_sf &lt;- st_as_sf(pts, coords = c(&quot;long&quot;, &quot;lat&quot;), crs = 
 
 result &lt;- ExtractDailySNODAS(XYdata = pts_sf,
                              datesname = &quot;dates&quot;,
-                             Metrics = c(&quot;SWE&quot;, &quot;SnowDepth&quot;), 
+                             Metrics = c(&quot;snowdepth&quot;), 
                              num_cores = 10)  
 </code></pre>
 </div>
@@ -501,15 +525,17 @@ from which you want to start extracting the metric.</li>
 <li><strong>end_date</strong>: This indicates the end of the date range
 up to which you want to extract the metric.</li>
 <li><strong>metric_name</strong>: Specify the metrics you are interested
-in
-(“Maxprcp”,“Maxswe”,“Maxtmax”,“Maxtmin”,“Meanprcp”,“Meanswe”,“Meantmax”,“Meantmin”,“Medianprcp”,“Medianswe”,“Mediantmax”,“Mediantmin”).</li>
+in (“prcp”, “swe”, “tmax”, “tmin”).</li>
+<li><strong>num_cores</strong>: Number of cores to use for parallel
+processing. If no value is defined, the function will auto detect how
+many cores are available on your machine.</li>
 </ol>
 <pre><code>#Sample data
 points &lt;- data.frame(id = c(1, 2), x = c(-108.36312, -109.36312),  y = c(45.54731, 45.54731)) %&gt;%
   sf::st_as_sf(coords = c(&quot;x&quot;, &quot;y&quot;), crs = 4326)
   
-maxprcp&lt;- ExtractDAYMET(point_data= points, start_date = &quot;2005-01-01&quot;, 
-                        end_date = &quot;2010-01-01&quot;, metric_name = &quot;Maxprcp&quot;)</code></pre>
+prcp &lt;- ExtractAnnualDAYMET(point_data= points, start_date = &quot;2005-01-01&quot;, 
+                        end_date = &quot;2010-01-01&quot;, metric_name = &quot;prcp&quot;, num_cores = 2)</code></pre>
 </div>
 <div id="extract-daily-daymet" class="section level3">
 <h3>Extract Daily DAYMET</h3>
@@ -522,7 +548,7 @@ points for which you want to extract daily DAYMET metrics.</li>
 <li><strong>datesname</strong>: Indicate the name of the column
 representing date as POSIXct.</li>
 <li><strong>Metrics</strong>: Specify the metrics you are interested in
-(prcp, swe, tmax or tmin) .</li>
+(“prcp”, “swe”, “tmax”, “tmin”) .</li>
 <li><strong>num_cores</strong>: Number of cores to use for parallel
 processing. If no value is defined, the function will auto detect how
 many cores are available on your machine.</li>
@@ -556,8 +582,7 @@ points for which you want to extract NDVI metrics.</li>
 representing date as POSIXct.</li>
 <li><strong>NDVImetric</strong>: Specify the metrics you are interested
 in (“MaxNDVIDay”,“MaxIRGday”, “SpringStartDay”,
-“SpringEndDay”,“IntegratedNDVI”,“MaxBrownDownDate”,
-“NDVI_scaled”,“IRG_scaled”,“SE_springDLCfit”,
+“SpringEndDay”,“MaxBrownDownDay”, “NDVI_scaled”,“IRG_scaled”,“SpringSE”,
 “SpringLength”,“sumIRG”,“SpringScale”).</li>
 <li><strong>maxcpus</strong>: Number of cores to use for parallel
 processing.</li>
@@ -574,13 +599,24 @@ df &lt;- data.frame(
 # Convert dataframe to sf object
 sf_obj &lt;- st_as_sf(df, coords = c(&quot;longitude&quot;, &quot;latitude&quot;), crs = 4326)
 
-result &lt;- ExtractNDVI(XYdata = sf_obj, NDVImetric = c( &quot;MaxNDVIDay&quot;, &quot;MaxBrownDownDate&quot;), datesname = &quot;random_date&quot;, maxcpus = 6)
+result &lt;- ExtractNDVI(XYdata = sf_obj, NDVImetric = c( &quot;MaxNDVIDay&quot;, &quot;MaxBrownDownDay&quot;), datesname = &quot;random_date&quot;, maxcpus = 6)
 </code></pre>
 </div>
 <div id="crop-rasters" class="section level3">
 <h3>Crop Rasters</h3>
 <p>Crop a list of rasters to a study area from the Merkle Research Group
-database. Cropped rasters are saved to the local computer.</p>
+database. Cropped rasters are saved to the local computer. To use this
+function, you need to provide the following inputs:</p>
+<ol style="list-style-type: decimal">
+<li><strong>cog_urls</strong>: A vector of raster URLs. These URLS
+should point directly to the geotiff files that you intend to crop from
+the Merkle Database.</li>
+<li><strong>polygon_sf</strong>: An sf polygon object.</li>
+<li><strong>output_folder</strong>: Output directory path of the cropped
+rasters.</li>
+<li><strong>writeData</strong>: TRUE/FALSE for saving the cropped data
+to the output folder. Default is FALSE.</li>
+</ol>
 <pre><code>#Sample data
 polygon_sf &lt;- st_polygon(list(matrix(c(-111, 45, 
                                             -104, 45, 
@@ -594,9 +630,9 @@ polygon_sf &lt;- st_sf(geometry = st_sfc(polygon_sf, crs = 4326))
 
 #List URLS
 cog_urls &lt;- c(
-  &quot;https://pathfinder.arcc.uwyo.edu/devise/SNODAS/SNODAS_SWE/SNODAS_20120405_SWE.tif&quot;,
-  &quot;https://pathfinder.arcc.uwyo.edu/devise/SNODAS/SNODAS_SnowDepth/SNODAS_20120218_SnowDepth.tif&quot;,
-  &quot;https://pathfinder.arcc.uwyo.edu/devise/DAYMET/DAYMET_prcp/DAYMET_v4_20050101_prcp.tif&quot;
+  &quot;https://pathfinder.arcc.uwyo.edu/merklelab/Landcover_RAP/RAP_2013_Biomass_AnnualForbsGrasses.tif&quot;,
+  &quot;https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif&quot;,
+  &quot;https://pathfinder.arcc.uwyo.edu/merklelab/DEM/TPI_330m.tif&quot;
 )
 
 #Alternatively create a dataframe of urls from the Merkle Research Group Database
@@ -611,7 +647,7 @@ cog_urls &lt;- DEM$url
 #Set output folder
 output_folder &lt;- &quot;C:/path/to/folder&quot;
 
-CropRasters(cog_urls, polygon_sf, output_folder)
+CropRasters(cog_urls, polygon_sf, output_folder, writeData = TRUE)
 </code></pre>
 </div>
 </div>

@@ -12,6 +12,8 @@
 #' before this julian day of a given year, the previous year's rap metrics will be extracted 
 #' @param datesname name of your column representing date as POSIXct
 #' @param maxcpus how many cores
+#' @param resolution spatial resolution of RAP data to extract as character. Options are 30m or 10m available only for 2018–2024, and required for some metrics such as 
+#'   `Cover_Sagebrush`, `Cover_PinyonJuniper`, and `Cover_AnnualInvasiveGrasses`. 
 #' @return Returns a vector with length of XYdata with the point/date values of RAPmetrics
 #' 
 #' 
@@ -27,20 +29,19 @@
 #' 
 #' 
 
-ExtractRAP <- function(XYdata, 
-                       RAPmetric = c("Biomass_AnnualForbsGrasses", "Cover_BareGround"),
-                       bio_year_start = NULL,
-                       datesname,
-                       maxcpus = NULL) {
+ExtractRAP <- function(
+    XYdata, 
+    RAPmetric = c("Biomass_AnnualForbsGrasses", "Cover_BareGround"),
+    bio_year_start = NULL,
+    datesname,
+    maxcpus = NULL,
+    resolution = "30m"
+) {
   message("--------------------------------------------------")
   message("Starting RAP extraction...")
   
-  
-  if(all(c("terra","sf","parallel") %in% installed.packages()[,1])==FALSE)
-    stop("You must install the following packages: raster, sf, and parallel")
-  # require("terra")
-  # require("sf")
-  # require("parallel")
+  if (all(c("terra","sf","parallel") %in% installed.packages()[,1]) == FALSE)
+    stop("You must install the following packages: terra, sf, and parallel")
   
   if (is.null(bio_year_start))
   {
@@ -48,117 +49,162 @@ ExtractRAP <- function(XYdata,
   } else{
     bio_year_start <- bio_year_start
   }
-  
+
   #Check cores
   if(is.null(maxcpus)){
     maxcpus <- detectCores()-1
   }else{
     maxcpus <- maxcpus
   }
-  
-  message("Using up to ", maxcpus, " CPU cores.")
-  
-  # Fetch RAP metadata
-  message("Fetching RAP metadata from bucket...")
-  
-  #Fetch RAP data from pathfinder
-  dt <- bucket()
-  RAP <- dt[dt$category == "Landcover_RAP",]
-  drs <- RAP$filename
-  
-  if(inherits(XYdata, "sf") == FALSE) stop("XYdata is not an sf object")
-  dates <- st_drop_geometry(XYdata)[[datesname]]
-  
-  if(inherits(dates, "POSIXct") != TRUE) 
-    stop("XYdata[,datesname] is not POSIXct")
-  if(any(is.na(dates) == TRUE)) 
-    stop("You have NAs in your date column")
 
-  if("temp" %in% colnames(XYdata))
-    stop("Please remove the column named 'temp' in your XYdata. Thank you!")
-  
-  if(any(RAPmetric %in% c("Biomass_AnnualForbsGrasses","Biomass_PerennialForbsGrasses", 
-                          "Cover_AnnualForbsGrasses","Cover_BareGround","Cover_Litter","Cover_PerennialForbsGrasses",
-                          "Cover_Shrubs","Cover_Trees")==FALSE)){
-    stop("The RAPmetric must only be Biomass_AnnualForbsGrasses,Biomass_PerennialForbsGrasses, 
-                    Cover_AnnualForbsGrasses,Cover_BareGround,Cover_Litter,Cover_PerennialForbsGrasses,
-                       Cover_Shrubs,Cover_Trees.")
+  resolution <- gsub(" ", "", resolution)
+  if (length(resolution) > 1) {
+    warning(
+      "Multiple resolutions requested (", paste(resolution, collapse = ", "),
+      "), but only one resolution is allowed. Using the first: ", resolution[1],
+      immediate. = TRUE
+    )
+    resolution <- resolution[1]
   }
   
-  tz <- attr(dates,"tzone")
-  year <- as.numeric(format(dates, "%Y"))
-  jul <- as.numeric(format(dates, "%j"))
-  
-  year_bio <- ifelse(jul > bio_year_start, year, year-1)  # bio year... basically, this is the year of the growing season and after scenecense. thus any days prior to bio_year_start in a given calendar year will be given the previous calendar years' RAP value.
-  yrs <- unique(year_bio)
+  resolution <- match.arg(resolution, choices = c("30m","10m"))
   
   
-  # identify cores (use 1 less than you have)
-  no_cores <- ifelse(length(yrs) < maxcpus, length(yrs), maxcpus)
-  # Setup cluster
-  clust <- parallel::makeCluster(no_cores) 
-  # export the objects you need for your calculations from your environment to each node's environment
-  parallel::clusterExport(clust, varlist=c("XYdata","year_bio","yrs","drs","RAPmetric","RAP"),envir=environment())
-  rap_list <- list()  
+  res_meta <- ifelse(resolution == "10m", "10 m", "30 m")
+  message("Resolution requested: ", resolution, " (metadata value: ", res_meta, ")")
+  message("Using up to ", maxcpus, " cores.")
   
-  #Save original crs
-  original_crs <- st_crs(XYdata)
+  metric_map <- c(
+    "Biomass_AnnualForbsGrasses"    = "Biomass Annual Forbs Grasses",
+    "Biomass_PerennialForbsGrasses" = "Biomass Perennial Forbs Grasses",
+    "Cover_AnnualForbsGrasses"      = "Cover Annual Forbs Grasses",
+    "Cover_BareGround"              = "Cover Bare Ground",
+    "Cover_Litter"                  = "Cover Litter",
+    "Cover_PerennialForbsGrasses"   = "Cover Perennial Forbs Grasses",
+    "Cover_Shrubs"                  = "Cover Shrubs",
+    "Cover_Trees"                   = "Cover Trees",
+    "Cover_PinyonJuniper"           = "Cover Pinyon-juniper",
+    "Cover_Sagebrush"               = "Cover Sagebrush",
+    "Cover_AnnualInvasiveGrass"   = "Cover Annual Invasive Grass"
+    
+  )
+ 
+  if (any(!RAPmetric %in% names(metric_map))) {
+    stop("RAPmetric must be one of: ", paste(names(metric_map), collapse = ", "))
+  }
   
-  #Transform for extraction
-  XYdata <- st_transform(XYdata, crs = 4326)
-  XYdata <- XYdata[order(XYdata[[datesname]]), ]
+  tenm_only <- c("Cover_Sagebrush", "Cover_PinyonJuniper", "Cover_AnnualInvasiveGrasses")
+  if (resolution == "30m" && any(RAPmetric %in% tenm_only)) {
+    warning(
+      "The following metrics are only available at 10 m resolution: ",
+      paste(intersect(RAPmetric, tenm_only), collapse = ", "),
+      ". Expect NA values when using 30 m resolution.",
+      immediate. = TRUE
+    )
+  }
   
-  message("Extracting RAP data...")
+  if (!inherits(XYdata, "sf")) stop("XYdata is not an sf object")
+  dates <- sf::st_drop_geometry(XYdata)[[datesname]]
+  if (!inherits(dates, "POSIXct")) stop("XYdata[,datesname] is not POSIXct")
+  if (any(is.na(dates))) stop("You have NAs in your date column")
+  if ("temp" %in% colnames(XYdata)) stop("Please remove the column named 'temp' in your XYdata.")
   
-  rap_list <- do.call(rbind, parallel::clusterApplyLB(clust, 1:length(yrs), function(i){
+  # --- biological year ---
+  yr  <- as.integer(format(dates, "%Y"))
+  jul <- as.integer(format(dates, "%j"))
+  year_bio <- ifelse(jul > bio_year_start, yr, yr - 1) # bio year... basically, this is the year of the growing season and after scenecense. thus any days prior to bio_year_start in a given calendar year will be given the previous calendar years' RAP value.
+  
+  # --- reorder XYdata and year_bio ---
+  ord <- order(dates)
+  XYdata   <- XYdata[ord, ]
+  dates    <- dates[ord]
+  year_bio <- year_bio[ord]
+  
+  yrs <- sort(unique(year_bio))
+
+  if (resolution == "10m" && any(yrs < 2018 | yrs > 2024)) {
+    warning("10 m RAP data is only available for 2018–2024. Expect NA values outside this range.", immediate. = TRUE)
+  }
+  
+  dt  <- bucket()
+  RAP <- dt[dt$category == "Landcover_RAP", ]
+  
+  # --- build URL table once ---
+  url_table <- data.frame(Year=integer(), Metric=character(), URL=character(), stringsAsFactors=FALSE)
+  for (yy in yrs) {
+    for (m in RAPmetric) {
+      meta_metric <- metric_map[[m]]
+      rap_sub <- RAP[
+        RAP$metric == meta_metric &
+          RAP$sampYear == yy &
+          !is.na(RAP$resolution) &
+          RAP$resolution == res_meta,
+      ]
+      url <- if (nrow(rap_sub) > 0) rap_sub$url[1] else NA
+      url_table <- rbind(url_table, data.frame(Year=yy, Metric=m, URL=url, stringsAsFactors=FALSE))
+    }
+  }
+  message("--------------------------------------------------")
+  message("RAP files to be used:")
+  print(url_table)
+  message("--------------------------------------------------")
+
+  original_crs <- sf::st_crs(XYdata)
+  out <- as.data.frame(matrix(NA_real_, nrow(XYdata), length(RAPmetric)))
+  colnames(out) <- RAPmetric
+  
+  no_cores <- min(length(yrs), maxcpus)
+  clust <- parallel::makeCluster(no_cores)
+  parallel::clusterExport(
+    clust,
+    varlist=c("XYdata","year_bio","yrs","RAPmetric","url_table"),
+    envir=environment()
+  )
+  
+  rap_list <- parallel::parLapply(clust, 1:length(yrs), function(i) {
     library(sf)
     library(terra)
-    
-    # grab the data for the given year
-    tmp <- XYdata[year_bio == yrs[i],]
-    
-    # Initialize toreturn dataframe
-    toreturn <- data.frame(matrix(ncol = length(RAPmetric), nrow = nrow(tmp)))
+    yy <- yrs[i]
+    idx <- which(year_bio == yy)
+    tmp <- XYdata[idx, ]
+    toreturn <- data.frame(matrix(NA_real_, nrow = length(idx), ncol = length(RAPmetric)))
     colnames(toreturn) <- RAPmetric
     
-    # loop over the metrics for this year
-    for(e in 1:length(RAPmetric)) {
-
-    url <- RAP$url[which(RAP$filename == paste0("RAP_", yrs[i], "_", RAPmetric[e], ".tif"))]
+    for (m in RAPmetric) {
+      url <- url_table$URL[url_table$Year == yy & url_table$Metric == m]
+      url <- if (length(url)) url[1] else NA
       
-      # Ensure URL is valid, if not assign NA and continue
-      if(length(url) == 0 || url == "") {
-        toreturn[,e] <- NA
+      if (is.na(url) || url == "") {
+        toreturn[, m] <- NA_real_
         next
       }
       
       file_url <- paste0("/vsicurl/", url)
-      
-      # Try to get raster data, if an error occurs, set the metric to NA
-      result <- tryCatch({
+      vals <- tryCatch({
         r <- terra::rast(file_url)
-        terra::extract(r, tmp)[, 2]
-      }, error = function(err) {
-        NA
+        tmp_proj <- sf::st_transform(tmp, crs = sf::st_crs(terra::crs(r, proj=TRUE)))
+        df <- terra::extract(r, tmp_proj)
+        df[[ ncol(df) ]]
+      }, error = function(e) {
+        rep(NA_real_, length(idx))
       })
-      
-      toreturn[,e] <- result
+      toreturn[, m] <- vals
     }
-    
-    
-    return(toreturn)
-  }))
+    return(list(idx=idx, data=toreturn))
+  })
+  parallel::stopCluster(clust)
   
+  # merge results back
+  for (res in rap_list) {
+    out[res$idx, ] <- res$data
+  }
   
-  parallel::stopCluster(clust)  
+  XYout <- cbind(XYdata, out)
+  XYout <- sf::st_transform(XYout, crs = original_crs)
+  attr(XYout, "RAP_urls") <- url_table
   
-  # Bind the extracted data to the original XYdata
-  XYdata <- cbind(XYdata, rap_list)
-  
-  # Reproject back to original data
-  XYdata <- st_transform(XYdata, crs = original_crs)
   message("RAP extraction finished.")
   message("--------------------------------------------------")
-  
-  return(XYdata)
+  return(XYout)
 }
+                  
