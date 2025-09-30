@@ -1,6 +1,6 @@
 Package: MerkleLabGIS
 Type: Package
-Version: 0.1.0
+Version: 0.1.2
 Author: Jessie Shapiro & Jerod Merkle
 Maintainer: The package maintainer <jessie.shapiro@uwyo.edu>
 Description: Provides functions to access and extract GIS data for Wyoming 
