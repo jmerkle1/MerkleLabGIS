@@ -65,7 +65,7 @@ ExtractDailyDAYMET <- function(XYdata, datesname = "date", Metrics = "prcp", num
     metric <- tasks$metric[j]
     yr     <- tasks$year[j]
     
-    url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/daily/cog/daymet/%s/daymet_daily_%s_%d.tif",
+    url <- sprintf("https://devise.s3.arcc.uwyo.edu/cloudenabled/daily/cog/daymet/%s/daymet_daily_%s_%d.tif",
                    metric, metric, yr)
     vsicurl_path <- paste0("/vsicurl/", url)
     

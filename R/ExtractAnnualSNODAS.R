@@ -56,7 +56,7 @@ ExtractAnnualSNODAS <- function(point_data, start_date, end_date,
   
   # parallelize over metrics
   result_list <- clusterApplyLB(clust, metric_name, function(metric) {
-    url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/snodas/snodas_annual_%s_all-years.tif",
+    url <- sprintf("https://devise.s3.arcc.uwyo.edu/cloudenabled/annual/cog/snodas/snodas_annual_%s_all-years.tif",
                    metric)
     vsicurl_path <- paste0("/vsicurl/", url)
     

@@ -65,7 +65,7 @@ ExtractDailySNODAS <- function(XYdata, datesname = "date", Metrics = c("swe", "s
   result_list <- clusterApplyLB(clust, seq_len(nrow(tasks)), function(j) {
     metric <- tasks$metric[j]
     yr     <- tasks$year[j]
-    url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/daily/cog/snodas/%s/snodas_daily_%s_%d.tif",
+    url <- sprintf("https://devise.s3.arcc.uwyo.edu/cloudenabled/daily/cog/snodas/%s/snodas_daily_%s_%d.tif",
                    metric, metric, yr)
     vsicurl_path <- paste0("/vsicurl/", url)
     tryCatch({

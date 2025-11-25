@@ -50,7 +50,7 @@ DownloadSNODAS <- function(params = c("swe", "snowdepth"), startDate, endDate, o
       band_indices <- yday(year_dates)
       
       # Construct COG URL and /vsicurl/ path
-      url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/daily/cog/snodas/%s/snodas_daily_%s_%d.tif",
+      url <- sprintf("https://devise.s3.arcc.uwyo.edu/cloudenabled/daily/cog/snodas/%s/snodas_daily_%s_%d.tif",
                      param, param, yr)
       vsicurl_path <- paste0("/vsicurl/", url)
       

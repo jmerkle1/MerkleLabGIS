@@ -54,7 +54,7 @@ ExtractAnnualDAYMET <- function(point_data, start_date, end_date,
   message("Extracting DAYMET values from remote COGs...")
   
   result_list <- clusterApplyLB(clust, metric_name, function(metric) {
-    url <- sprintf("https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/daymet/daymet_annual_%s_all-years.tif", metric)
+    url <- sprintf("https://devise.s3.arcc.uwyo.edu/cloudenabled/annual/cog/daymet/daymet_annual_%s_all-years.tif", metric)
     vsicurl_path <- paste0("/vsicurl/", url)
     
     tryCatch({
