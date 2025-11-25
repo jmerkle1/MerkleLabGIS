@@ -14,13 +14,13 @@ For those interested in reading COGs in R via the terra package, the code snippe
 ```
 library(terra)
 #Change to the raster url you want to read in. 
-cog <- rast("/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/MerkleLabGIS/Landcover_NLCD/NLCD_2008_Landcover.tif") 
+cog <- rast("/vsicurl/https://merklelab.s3.arcc.uwyo.edu/devise/MerkleLabGIS/Landcover_NLCD/NLCD_2008_Landcover.tif") 
 plot(cog)
 ```
 To extract a specific year or day from a multi-band COG, you can use band indexing:
 
 ```
-cog <- rast("/vsicurl/https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif")
+cog <- rast("/vsicurl/https://devise.s3.arcc.uwyo.edu/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif")
 year_2004 <- cog[[1]]
 ```
 ## Functions
@@ -194,9 +194,9 @@ polygon_sf <- st_sf(geometry = st_sfc(polygon_sf, crs = 4326))
 
 #List URLS
 cog_urls <- c(
-  "https://pathfinder.arcc.uwyo.edu/merklelab/Landcover_RAP/RAP_2013_Biomass_AnnualForbsGrasses.tif",
-  "https://pathfinder.arcc.uwyo.edu/devise/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif",
-  "https://pathfinder.arcc.uwyo.edu/merklelab/DEM/TPI_330m.tif"
+  "https://merklelab.s3.arcc.uwyo.edu/Landcover_RAP/RAP_2013_Biomass_AnnualForbsGrasses.tif",
+  "https://devise.s3.arcc.uwyo.edu/cloudenabled/annual/cog/snodas/snodas_annual_snowdepth_all-years.tif",
+  "https://merklelab.s3.arcc.uwyo.edu/DEM/TPI_330m.tif"
 )
 
 #Alternatively create a dataframe of urls from the Merkle Research Group Database
